@@ -1,0 +1,32 @@
+[project]
+name = "trading-assistant"
+version = "0.1.0"
+description = "Personal trading alert assistant with FastAPI, TradingView webhooks, plugin strategies, and KakaoTalk notifications."
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.13.2",
+    "fastapi>=0.115.0",
+    "httpx>=0.27.2",
+    "pydantic-settings>=2.5.2",
+    "python-dotenv>=1.0.1",
+    "python-multipart>=0.0.9",
+    "sqlalchemy>=2.0.35",
+    "uvicorn[standard]>=0.30.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "ruff>=0.6.8",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*", "strategies*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

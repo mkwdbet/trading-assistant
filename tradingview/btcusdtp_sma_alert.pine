@@ -1,0 +1,50 @@
+//@version=5
+indicator("Trading Assistant BTCUSDT.P SMA Alert", overlay=true)
+
+sma7 = ta.sma(close, 7)
+sma21 = ta.sma(close, 21)
+sma60 = ta.sma(close, 60)
+touchTolerancePct = input.float(0.002, "Touch tolerance", minval=0.0, step=0.0001)
+
+plot(sma7, "SMA7", color=color.new(color.green, 0), linewidth=2)
+plot(sma21, "SMA21", color=color.new(color.orange, 0), linewidth=2)
+plot(sma60, "SMA60", color=color.new(color.red, 0), linewidth=2)
+
+string state = "NEUTRAL"
+if sma7 > sma21 and sma21 > sma60
+    state := "STRONG_BULL"
+else if sma7 < sma21 and sma21 < sma60
+    state := "STRONG_BEAR"
+else if sma7 > sma60
+    state := "WEAK_BULL"
+else if sma7 < sma60
+    state := "WEAK_BEAR"
+
+previousState = state[1]
+strongBullCompleted = previousState != "STRONG_BULL" and state == "STRONG_BULL"
+strongBearCompleted = previousState != "STRONG_BEAR" and state == "STRONG_BEAR"
+strongBullSma21Touch = state == "STRONG_BULL" and math.abs(close - sma21) / sma21 <= touchTolerancePct
+strongBullSma60Touch = state == "STRONG_BULL" and math.abs(close - sma60) / sma60 <= touchTolerancePct
+strongBearSma21Touch = state == "STRONG_BEAR" and math.abs(close - sma21) / sma21 <= touchTolerancePct
+strongBearSma60Touch = state == "STRONG_BEAR" and math.abs(close - sma60) / sma60 <= touchTolerancePct
+
+eventDetected = strongBullCompleted or strongBearCompleted or strongBullSma21Touch or strongBullSma60Touch or strongBearSma21Touch or strongBearSma60Touch
+shouldAlert = barstate.isconfirmed and eventDetected
+
+payload = "{" +
+     "\"symbol\":\"{{exchange}}:{{ticker}}\"," +
+     "\"timeframe\":\"{{interval}}\"," +
+     "\"event\":\"tradingview_alert\"," +
+     "\"message\":\"SMA 4H update\"," +
+     "\"price\":" + str.tostring(close) + "," +
+     "\"occurred_at\":\"{{time}}\"," +
+     "\"data\":{" +
+     "\"sma7\":" + str.tostring(sma7) + "," +
+     "\"sma21\":" + str.tostring(sma21) + "," +
+     "\"sma60\":" + str.tostring(sma60) + "," +
+     "\"touch_tolerance_pct\":" + str.tostring(touchTolerancePct) +
+     "}" +
+     "}"
+
+if shouldAlert
+    alert(payload, alert.freq_once_per_bar_close)
