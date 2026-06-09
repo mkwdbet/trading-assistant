@@ -7,7 +7,7 @@ class SmaStrategy(BaseStrategy):
     description = "4-hour SMA 7/21/60 state and touch alert strategy."
     symbols = {"BTCUSDT.P", "BINANCE:BTCUSDT.P"}
     timeframes = {"240", "4h", "4H"}
-    touch_tolerance_pct = 0.002
+    touch_tolerance_pct = 0.001
 
     last_evaluated_state: str | None = None
 

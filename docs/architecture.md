@@ -98,7 +98,7 @@ Touch rule:
 abs(price - SMA) / SMA <= touch_tolerance_pct
 ```
 
-Default tolerance is `0.002`, or 0.2%. TradingView can override it in webhook `data.touch_tolerance_pct`.
+Default tolerance is `0.001`, or 0.1%. TradingView can override it in webhook `data.touch_tolerance_pct`.
 
 Duplicate prevention:
 
@@ -175,7 +175,7 @@ Example body:
     "sma7": 105.0,
     "sma21": 101.1,
     "sma60": 95.0,
-    "touch_tolerance_pct": 0.002
+    "touch_tolerance_pct": 0.001
   }
 }
 ```
@@ -230,7 +230,7 @@ https://your-domain.com/api/v1/webhooks/tradingview/YOUR_SECRET
     "sma7": {{plot("SMA7")}},
     "sma21": {{plot("SMA21")}},
     "sma60": {{plot("SMA60")}},
-    "touch_tolerance_pct": 0.002
+    "touch_tolerance_pct": 0.001
   }
 }
 ```

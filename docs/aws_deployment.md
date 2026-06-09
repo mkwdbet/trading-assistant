@@ -129,7 +129,7 @@ curl -X POST "https://${DOMAIN}/api/v1/webhooks/tradingview/${SECRET}" \
       "sma7": 90.0,
       "sma21": 100.0,
       "sma60": 110.0,
-      "touch_tolerance_pct": 0.002
+      "touch_tolerance_pct": 0.001
     }
   }'
 ```

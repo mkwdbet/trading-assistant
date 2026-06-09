@@ -128,7 +128,7 @@ $body = @{
     sma7 = 105.0
     sma21 = 101.1
     sma60 = 95.0
-    touch_tolerance_pct = 0.002
+    touch_tolerance_pct = 0.001
   }
 } | ConvertTo-Json
 
@@ -215,7 +215,7 @@ Message body:
     "sma7": {{plot("SMA7")}},
     "sma21": {{plot("SMA21")}},
     "sma60": {{plot("SMA60")}},
-    "touch_tolerance_pct": 0.002
+    "touch_tolerance_pct": 0.001
   }
 }
 ```

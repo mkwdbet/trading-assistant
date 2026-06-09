@@ -4,7 +4,7 @@ indicator("Trading Assistant BTCUSDT.P SMA Alert", overlay=true)
 sma7 = ta.sma(close, 7)
 sma21 = ta.sma(close, 21)
 sma60 = ta.sma(close, 60)
-touchTolerancePct = input.float(0.002, "Touch tolerance", minval=0.0, step=0.0001)
+touchTolerancePct = input.float(0.001, "Touch tolerance", minval=0.0, step=0.0001)
 
 plot(sma7, "SMA7", color=color.new(color.green, 0), linewidth=2)
 plot(sma21, "SMA21", color=color.new(color.orange, 0), linewidth=2)
