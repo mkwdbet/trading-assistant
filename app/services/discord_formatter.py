@@ -44,10 +44,10 @@ SIGNAL_TEMPLATES = {
 }
 
 SITUATION_SUMMARIES = {
-    "21선 눌림": "4시간봉 상승 추세에서 SMA21 눌림 재접근",
-    "60선 눌림": "4시간봉 상승 추세에서 SMA60 눌림 재접근",
-    "21선 저항": "4시간봉 하락 추세에서 SMA21 저항 재접근",
-    "60선 저항": "4시간봉 하락 추세에서 SMA60 저항 재접근",
+    "21선 눌림": "4시간봉 상승 추세에서 SMA21이 가격을 아래에서 지지하고 재접근했습니다.",
+    "60선 눌림": "4시간봉 상승 추세에서 장기 기준선 SMA60 부근까지 눌림이 발생했습니다.",
+    "21선 저항": "4시간봉 하락 추세에서 SMA21이 가격을 위에서 저항하고 재접근했습니다.",
+    "60선 저항": "4시간봉 하락 추세에서 장기 기준선 SMA60 부근 저항이 발생했습니다.",
     "정배열 완성": "4시간봉 SMA 정배열이 완성되었습니다.",
     "역배열 완성": "4시간봉 SMA 역배열이 완성되었습니다.",
 }
@@ -65,9 +65,9 @@ def format_discord_signal_embed(signal: Signal) -> dict[str, Any]:
     title = f"{template['emoji']} {signal.symbol} | {signal.signal_type}"
     description = "\n\n".join(
         [
-            f"**상황**\n{_summary_for_signal(signal)}",
-            f"**판단**\n{template['judgment']}",
-            f"**이유**\n{_format_reason(signal)}",
+            f"📈 **상황**\n{_summary_for_signal(signal)}",
+            f"🎯 **판단**\n{template['judgment']}",
+            f"🔷 **이유**\n{_format_reason(signal)}",
         ]
     )
 
@@ -76,24 +76,36 @@ def format_discord_signal_embed(signal: Signal) -> dict[str, Any]:
         "description": description,
         "color": template["color"],
         "fields": [
-            {"name": "Signal ID", "value": str(signal.id or "-"), "inline": True},
+            {"name": "📊 상세 정보", "value": "아래 값은 신호 발생 시점 기준입니다.", "inline": False},
             {"name": "Timeframe", "value": _format_timeframe(signal.timeframe), "inline": True},
             {"name": "State", "value": signal.market_state or "-", "inline": True},
             {"name": "Situation", "value": _format_situation_field(signal.situation), "inline": True},
-            {"name": "Strategy", "value": signal.strategy_name, "inline": True},
-            {"name": "Entry Price", "value": _format_optional_number(signal.entry_price), "inline": True},
             {
-                "name": "Performance Tracking",
-                "value": "This signal will be tracked at 12h / 24h / 48h / 72h.",
+                "name": "현재가 (Last Price)",
+                "value": _format_price_usdt(signal.current_price or signal.entry_price),
+                "inline": True,
+            },
+            {"name": "SMA7", "value": _format_optional_number(signal.sma7), "inline": True},
+            {"name": "SMA21", "value": _format_optional_number(signal.sma21), "inline": True},
+            {"name": "SMA60", "value": _format_optional_number(signal.sma60), "inline": True},
+            {"name": "SMA21 대비", "value": _format_ma_distance(signal, signal.sma21), "inline": True},
+            {"name": "Signal ID", "value": str(signal.id or "-"), "inline": True},
+            {"name": "Signal Time (KST)", "value": _format_kst(signal.occurred_at), "inline": True},
+            {
+                "name": "⏳ 성과 추적 예정",
+                "value": (
+                    "이 신호는 가상 진입 후 아래 시간 기준으로 성과를 추적합니다.\n"
+                    "12시간 후 / 24시간 후 / 48시간 후 / 72시간 후"
+                ),
                 "inline": False,
             },
-            {"name": "Occurred At", "value": _format_kst(signal.occurred_at), "inline": False},
         ],
+        "footer": {"text": "본 알림은 참고용이며, 투자에 대한 최종 책임은 본인에게 있습니다."},
     }
 
     values = _format_market_values(signal)
     if values:
-        embed["footer"] = {"text": values}
+        embed["fields"].append({"name": "Raw Values", "value": values, "inline": False})
 
     return embed
 
@@ -154,7 +166,7 @@ def _format_situation_field(situation: str | None) -> str:
 def _format_kst(value: datetime) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
-    return value.astimezone(KST).strftime("%Y-%m-%d %H:%M KST")
+    return value.astimezone(KST).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _format_market_values(signal: Signal) -> str:
@@ -183,3 +195,18 @@ def _format_optional_number(value: float | None) -> str:
     if value is None:
         return "-"
     return _format_number(value)
+
+
+def _format_price_usdt(value: float | None) -> str:
+    if value is None:
+        return "-"
+    return f"{_format_number(value)} USDT"
+
+
+def _format_ma_distance(signal: Signal, moving_average: float | None) -> str:
+    price = signal.current_price or signal.entry_price
+    if price is None or moving_average in (None, 0):
+        return "-"
+    value = (price - moving_average) / moving_average * 100
+    sign = "+" if value > 0 else ""
+    return f"{sign}{value:.2f}%"
