@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     discord_webhook_url: str = ""
     discord_username: str = "Trading Assistant"
     enable_discord_notifications: bool = False
+    enable_outcome_tracking: bool = True
+    outcome_tracker_interval_seconds: int = 300
 
 
 @lru_cache

@@ -45,6 +45,9 @@ def test_create_signal_persists_hypothetical_entry_metrics() -> None:
         row = create_signal(db, signal)
 
         assert row.entry_price == 101.5
+        assert row.current_price == 101.5
         assert row.sma7 == 105.0
         assert row.sma21 == 101.7
         assert row.sma60 == 95.0
+        assert row.direction == "LONG"
+        assert row.analysis_signal_type == "bullish_21ma_touch"

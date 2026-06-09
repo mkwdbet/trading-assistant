@@ -15,14 +15,18 @@ class TradingViewWebhookPayload(BaseModel):
 
 
 class SignalCreate(BaseModel):
+    id: int | None = None
     symbol: str
     timeframe: str
     strategy_name: str
     signal_type: str
+    direction: str | None = None
+    analysis_signal_type: str | None = None
     market_state: str | None = None
     situation: str | None = None
     dedupe_key: str | None = None
     entry_price: float | None = None
+    current_price: float | None = None
     sma7: float | None = None
     sma21: float | None = None
     sma60: float | None = None
@@ -37,14 +41,34 @@ class SignalRead(BaseModel):
     timeframe: str
     strategy_name: str
     signal_type: str
+    direction: str | None
+    analysis_signal_type: str | None
     market_state: str | None
     situation: str | None
     entry_price: float | None
+    current_price: float | None
     sma7: float | None
     sma21: float | None
     sma60: float | None
     message: str
     occurred_at: datetime
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SignalOutcomeRead(BaseModel):
+    id: int
+    signal_id: int
+    horizon_hours: int
+    target_time: datetime
+    evaluated_at: datetime
+    price_after: float
+    return_pct: float
+    max_price: float
+    min_price: float
+    max_favorable_return_pct: float
+    max_adverse_return_pct: float
     created_at: datetime
 
     model_config = {"from_attributes": True}

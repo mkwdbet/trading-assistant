@@ -76,10 +76,17 @@ def format_discord_signal_embed(signal: Signal) -> dict[str, Any]:
         "description": description,
         "color": template["color"],
         "fields": [
+            {"name": "Signal ID", "value": str(signal.id or "-"), "inline": True},
             {"name": "Timeframe", "value": _format_timeframe(signal.timeframe), "inline": True},
             {"name": "State", "value": signal.market_state or "-", "inline": True},
             {"name": "Situation", "value": _format_situation_field(signal.situation), "inline": True},
             {"name": "Strategy", "value": signal.strategy_name, "inline": True},
+            {"name": "Entry Price", "value": _format_optional_number(signal.entry_price), "inline": True},
+            {
+                "name": "Performance Tracking",
+                "value": "This signal will be tracked at 12h / 24h / 48h / 72h.",
+                "inline": False,
+            },
             {"name": "Occurred At", "value": _format_kst(signal.occurred_at), "inline": False},
         ],
     }
@@ -170,3 +177,9 @@ def _format_number(value: float) -> str:
     if abs(value) >= 1:
         return f"{value:,.4f}".rstrip("0").rstrip(".")
     return f"{value:,.6f}".rstrip("0").rstrip(".")
+
+
+def _format_optional_number(value: float | None) -> str:
+    if value is None:
+        return "-"
+    return _format_number(value)

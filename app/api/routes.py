@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.schemas import SignalCreate, SignalRead, TradingViewWebhookPayload
 from app.services.notifier import NotificationService
+from app.services.outcome_tracker import record_due_outcomes
 from app.services.signal_repository import (
     create_signal,
     get_strategy_state,
@@ -12,6 +13,8 @@ from app.services.signal_repository import (
     list_signals,
     upsert_strategy_state,
 )
+from app.services.signal_stats import build_signal_stats
+from app.services.stats_discord import send_stats_to_discord
 from app.services.strategy_engine import StrategyEngine
 from app.strategies.base import StrategyContext
 
@@ -78,7 +81,8 @@ async def tradingview_webhook(
                 "metadata": strategy_signal.metadata,
             },
         )
-        create_signal(db, signal)
+        saved_signal = create_signal(db, signal)
+        signal.id = saved_signal.id
         await notifier.send_signal(signal)
         created_count += 1
 
@@ -116,3 +120,21 @@ def get_signals(
         strategy_name=strategy_name,
         limit=limit,
     )
+
+
+@router.get("/stats/signals", tags=["stats"])
+def get_signal_stats(db: Session = Depends(get_db)) -> dict:
+    return build_signal_stats(db)
+
+
+@router.post("/stats/discord", tags=["stats"])
+async def post_signal_stats_to_discord(db: Session = Depends(get_db)) -> dict[str, str]:
+    stats = build_signal_stats(db)
+    await send_stats_to_discord(stats)
+    return {"status": "sent"}
+
+
+@router.post("/outcomes/record-due", tags=["outcomes"])
+async def post_record_due_outcomes() -> dict[str, int]:
+    recorded_count = await record_due_outcomes()
+    return {"outcomes_recorded": recorded_count}
