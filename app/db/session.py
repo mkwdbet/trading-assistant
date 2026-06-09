@@ -33,6 +33,10 @@ def _add_sqlite_columns_for_mvp_iteration() -> None:
         "market_state": "VARCHAR(80)",
         "situation": "VARCHAR(120)",
         "dedupe_key": "VARCHAR(180)",
+        "entry_price": "FLOAT",
+        "sma7": "FLOAT",
+        "sma21": "FLOAT",
+        "sma60": "FLOAT",
     }
 
     with engine.begin() as connection:

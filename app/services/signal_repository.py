@@ -9,6 +9,7 @@ from app.schemas import SignalCreate
 
 
 def create_signal(db: Session, signal: SignalCreate) -> Signal:
+    metrics = _extract_hypothetical_entry_metrics(signal)
     row = Signal(
         symbol=signal.symbol,
         timeframe=signal.timeframe,
@@ -17,6 +18,10 @@ def create_signal(db: Session, signal: SignalCreate) -> Signal:
         market_state=signal.market_state,
         situation=signal.situation,
         dedupe_key=signal.dedupe_key,
+        entry_price=metrics["entry_price"],
+        sma7=metrics["sma7"],
+        sma21=metrics["sma21"],
+        sma60=metrics["sma60"],
         message=signal.message,
         payload_json=json.dumps(signal.payload, ensure_ascii=False, default=str),
         occurred_at=signal.occurred_at,
@@ -25,6 +30,31 @@ def create_signal(db: Session, signal: SignalCreate) -> Signal:
     db.commit()
     db.refresh(row)
     return row
+
+
+def _extract_hypothetical_entry_metrics(signal: SignalCreate) -> dict[str, float | None]:
+    payload = signal.payload
+    metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    tradingview = payload.get("tradingview") if isinstance(payload.get("tradingview"), dict) else {}
+    data = tradingview.get("data") if isinstance(tradingview.get("data"), dict) else {}
+
+    return {
+        "entry_price": _to_float(signal.entry_price, metadata.get("price"), tradingview.get("price")),
+        "sma7": _to_float(signal.sma7, metadata.get("sma7"), data.get("sma7"), data.get("sma_7")),
+        "sma21": _to_float(signal.sma21, metadata.get("sma21"), data.get("sma21"), data.get("sma_21")),
+        "sma60": _to_float(signal.sma60, metadata.get("sma60"), data.get("sma60"), data.get("sma_60")),
+    }
+
+
+def _to_float(*values: object) -> float | None:
+    for value in values:
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def list_signals(

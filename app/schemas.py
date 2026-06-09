@@ -22,6 +22,10 @@ class SignalCreate(BaseModel):
     market_state: str | None = None
     situation: str | None = None
     dedupe_key: str | None = None
+    entry_price: float | None = None
+    sma7: float | None = None
+    sma21: float | None = None
+    sma60: float | None = None
     message: str
     occurred_at: datetime
     payload: dict[str, Any]
@@ -35,6 +39,10 @@ class SignalRead(BaseModel):
     signal_type: str
     market_state: str | None
     situation: str | None
+    entry_price: float | None
+    sma7: float | None
+    sma21: float | None
+    sma60: float | None
     message: str
     occurred_at: datetime
     created_at: datetime

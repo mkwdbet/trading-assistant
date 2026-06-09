@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, Float, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -19,6 +19,10 @@ class Signal(Base):
     market_state: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     situation: Mapped[str | None] = mapped_column(String(120), nullable=True)
     dedupe_key: Mapped[str | None] = mapped_column(String(180), nullable=True, index=True)
+    entry_price: Mapped[float | None] = mapped_column(Float, nullable=True, index=True)
+    sma7: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sma21: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sma60: Mapped[float | None] = mapped_column(Float, nullable=True)
     message: Mapped[str] = mapped_column(Text)
     payload_json: Mapped[str] = mapped_column(Text)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
