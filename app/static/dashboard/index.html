@@ -22,6 +22,7 @@
       </div>
       <nav class="nav">
         <button class="active" data-view="dashboard">Dashboard</button>
+        <button data-view="edge-alerts">Edge Alerts</button>
         <button data-view="signals">Signals</button>
         <button data-view="performance">Performance</button>
         <button data-view="strategy">Strategy Analysis</button>
@@ -91,6 +92,64 @@
             <canvas id="symbolReturnsChart"></canvas>
           </section>
         </div>
+      </section>
+
+      <section id="edge-alerts" class="view">
+        <div class="panel-grid edge-intro-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Rare Edge Alerts</h2>
+              <span>장기투자용 희귀 기술적 우위만 알림</span>
+            </div>
+            <p class="edge-copy">
+              단타성 빈번한 신호 대신, 주봉/일봉 기준의 드문 위치만 Discord로 보냅니다.
+              TradingView에서 확인 가능한 티커를 입력해 여러 종목의 장기 우위 조건을 관리합니다.
+            </p>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Example</h2>
+              <span>S&P 500 weekly SMA60</span>
+            </div>
+            <div class="edge-rule-note">
+              <strong>SPX · 1W · SMA60 touch</strong>
+              <span>주봉 60선 재접근처럼 자주 오지 않는 구간만 알림.</span>
+            </div>
+          </section>
+        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Add Edge Rule</h2>
+            <span>티커 입력 후 희귀 우위 조건 저장</span>
+          </div>
+          <form class="edge-form" id="edgeRuleForm">
+            <input name="name" placeholder="Rule name" value="S&P 500 weekly SMA60 touch" required />
+            <input name="symbol" placeholder="TradingView ticker, e.g. SPX, SPY, QQQ, AAPL, BTCUSDT.P" value="SPX" required />
+            <select name="edge_timeframe">
+              <option value="1w" selected>1W</option>
+              <option value="1d">1D</option>
+              <option value="4h">4H</option>
+            </select>
+            <select name="direction">
+              <option value="LONG" selected>LONG</option>
+              <option value="SHORT">SHORT</option>
+              <option value="WATCH">WATCH</option>
+            </select>
+            <label>MA Period<input name="ma_period" type="number" min="1" step="1" value="60" /></label>
+            <label>Tolerance %<input name="tolerance_pct" type="number" min="0" step="0.1" value="0.5" /></label>
+            <label>Cooldown Hours<input name="cooldown_hours" type="number" min="1" step="1" value="168" /></label>
+            <textarea name="thesis" placeholder="Situation thesis">주봉 기준 S&P 500이 SMA60에 닿는 드문 장기 매수 관심 구간</textarea>
+            <textarea name="judgment" placeholder="Judgment">장기투자 관점에서 희귀한 기술적 우위 후보입니다. 즉시 진입이 아니라 차트 확인용 알림입니다.</textarea>
+            <button type="submit">Save Edge Rule</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Saved Edge Rules</h2>
+            <span>활성 희귀 우위 알림 규칙</span>
+          </div>
+          <div class="table-wrap"><table id="edgeRulesTable"></table></div>
+        </section>
       </section>
 
       <section id="signals" class="view">

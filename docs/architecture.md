@@ -2,16 +2,16 @@
 
 ## 1. System Architecture
 
-MVP is an alert-only system. It does not place trades.
+MVP is a long-term rare technical edge radar. It does not place trades.
 
 Flow:
 
 1. TradingView alert fires from a chart or Pine Script.
 2. TradingView sends a webhook to FastAPI.
 3. FastAPI validates the webhook secret.
-4. FastAPI loads previous strategy state from SQLite.
+4. FastAPI evaluates saved Rare Edge Rules and plugin strategies.
 5. Strategy Engine auto-discovers strategy classes from `strategies/`.
-6. Each strategy evaluates state changes and events from the normalized webhook payload.
+6. Rules and strategies evaluate state changes and rare technical edge events from the normalized webhook payload.
 7. Generated signals are de-duplicated, saved to the database, then sent to enabled notification channels.
 8. Latest strategy state is saved separately from signal events.
 9. Signals can be queried through REST API and exposed in a web dashboard.
@@ -61,6 +61,17 @@ README.md
 `app/strategies/` contains framework code. Top-level `strategies/` contains user strategy plugins.
 
 ## 3. Strategy Model
+
+The product direction is shifting from frequent short-term trading alerts to rare long-term technical edge alerts.
+
+Primary examples:
+
+- S&P 500 weekly SMA60 touch
+- QQQ daily SMA200 touch
+- Long-term support retest after a large pullback
+- Rare resistance retest for risk management
+
+The web dashboard exposes `Edge Alerts`, where the user can add/delete ticker-based rules. A rule is evaluated only when TradingView or another data source sends a webhook payload for the matching ticker and timeframe.
 
 MVP v1 uses only 4-hour SMA values:
 

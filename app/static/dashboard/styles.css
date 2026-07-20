@@ -15,6 +15,54 @@
   --soft-line: rgba(148, 163, 184, 0.14);
 }
 
+.edge-intro-grid {
+  align-items: stretch;
+}
+
+.edge-copy,
+.edge-rule-note span {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.edge-rule-note {
+  display: grid;
+  gap: 8px;
+}
+
+.edge-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.edge-form input,
+.edge-form select,
+.edge-form textarea {
+  width: 100%;
+}
+
+.edge-form textarea {
+  min-height: 88px;
+  grid-column: span 2;
+  resize: vertical;
+}
+
+.edge-form button {
+  grid-column: span 4;
+}
+
+@media (max-width: 920px) {
+  .edge-form {
+    grid-template-columns: 1fr;
+  }
+
+  .edge-form textarea,
+  .edge-form button {
+    grid-column: auto;
+  }
+}
+
 * { box-sizing: border-box; }
 
 body {

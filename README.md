@@ -1,8 +1,8 @@
 # AlphaForge (MVP v1)
 
-개인용 트레이딩 알림 비서 MVP입니다. TradingView webhook을 받아 전략 플러그인을 평가하고, 신호를 DB에 저장한 뒤 Discord 알림을 보냅니다.
+개인용 장기투자 기술적 우위 레이더 MVP입니다. TradingView webhook을 받아 희귀한 기술적 우위 조건을 평가하고, 신호를 DB에 저장한 뒤 Discord 알림을 보냅니다.
 
-현재 범위는 알림 전용입니다. 자동매매나 주문 기능은 없습니다.
+현재 범위는 알림과 연구용 백테스트입니다. 자동매매나 주문 기능은 없습니다.
 
 ## Architecture
 
@@ -11,8 +11,23 @@
 핵심 흐름:
 
 ```text
-TradingView Alert -> Webhook -> FastAPI -> Signal Engine -> Discord Webhook
+TradingView Alert -> Webhook -> FastAPI -> Rare Edge Rules -> Discord Webhook
 ```
+
+## Product Direction
+
+이 서비스의 주 목적은 단타 신호를 많이 받는 것이 아니라, 장기투자 관점에서 자주 오지 않는 기술적 우위 구간만 조용히 감시하는 것입니다.
+
+예시:
+
+- S&P 500이 주봉 SMA60에 재접근
+- QQQ가 일봉 SMA200에 재접근
+- 장기 상승 추세 안에서 큰 눌림이 발생
+- 리스크 관리가 필요한 희귀 저항 구간 도달
+
+웹 대시보드의 `Edge Alerts` 탭에서 TradingView 티커를 입력하고 희귀 우위 규칙을 추가/삭제할 수 있습니다.
+
+규칙은 현재 MVP 기준으로 `가격이 특정 SMA에 지정 오차 범위 내 접근`하는 형태를 지원합니다.
 
 ## MVP v1 Strategy
 
@@ -227,6 +242,28 @@ TradingView에서 exchange prefix까지 포함해 보내고 싶으면 `symbol`�
 로컬 PC에서 TradingView webhook을 직접 받으려면 ngrok 또는 Cloudflare Tunnel 같은 터널을 사용하세요.
 
 현재 사용할 Pine Script와 설정값은 [tradingview/btcusdtp_sma_alert.pine](tradingview/btcusdtp_sma_alert.pine) 및 [tradingview/alert_setup.md](tradingview/alert_setup.md)에 정리되어 있습니다.
+
+## Rare Edge Alerts
+
+웹 대시보드:
+
+```text
+http://YOUR_SERVER_OR_DOMAIN/dashboard
+```
+
+`Edge Alerts` 탭에서 입력:
+
+- `Rule name`: 규칙 이름
+- `Symbol`: TradingView 티커, 예: `SPX`, `SPY`, `QQQ`, `AAPL`, `BTCUSDT.P`
+- `Timeframe`: `1W`, `1D`, `4H`
+- `Direction`: `LONG`, `SHORT`, `WATCH`
+- `MA Period`: 예: `60`, `200`
+- `Tolerance %`: 예: `0.5`
+- `Cooldown Hours`: 예: `168`
+- `Thesis`: 이 규칙을 보는 이유
+- `Judgment`: 알림을 받았을 때 해석 문구
+
+중요: 웹에서 규칙을 저장해도 TradingView가 해당 티커/타임프레임 webhook을 보내야 실제 평가됩니다. 여러 종목을 보려면 TradingView에서 각 티커에 알림을 만들거나, 같은 구조의 webhook을 보내는 데이터 소스를 추가해야 합니다.
 
 ## Discord Webhook Setup
 

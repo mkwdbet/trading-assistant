@@ -11,6 +11,21 @@ TREND_CHANGE_COLOR = 0x3498DB
 WARNING_COLOR = 0xF1C40F
 
 SIGNAL_TEMPLATES = {
+    "희귀 매수 우위": {
+        "emoji": "🟢",
+        "color": BUY_COLOR,
+        "judgment": "장기투자 관점에서 드문 매수 우위 후보입니다. 즉시 진입이 아니라 확인용 알림입니다.",
+    },
+    "희귀 매도 우위": {
+        "emoji": "🔴",
+        "color": SELL_COLOR,
+        "judgment": "장기투자 관점에서 드문 리스크 관리 또는 매도 우위 후보입니다. 포지션 점검용 알림입니다.",
+    },
+    "희귀 기술적 우위": {
+        "emoji": "🟡",
+        "color": WARNING_COLOR,
+        "judgment": "자주 오지 않는 기술적 위치입니다. 차트 확인 가치가 있는 구간입니다.",
+    },
     "매수 관심": {
         "emoji": "🟢",
         "color": BUY_COLOR,
@@ -66,7 +81,7 @@ def format_discord_signal_embed(signal: Signal) -> dict[str, Any]:
     description = "\n\n".join(
         [
             f"📈 **상황**\n{_summary_for_signal(signal)}",
-            f"🎯 **판단**\n{template['judgment']}",
+            f"🎯 **판단**\n{_judgment_for_signal(signal, template)}",
             f"🔷 **이유**\n{_format_reason(signal)}",
         ]
     )
@@ -123,11 +138,21 @@ def _template_for_signal(signal_type: str) -> dict[str, Any]:
 
 
 def _summary_for_signal(signal: Signal) -> str:
+    edge_rule = signal.payload.get("edge_rule")
+    if isinstance(edge_rule, dict) and edge_rule.get("thesis"):
+        return str(edge_rule["thesis"])
     if signal.situation in SITUATION_SUMMARIES:
         return SITUATION_SUMMARIES[signal.situation]
     if signal.market_state:
         return f"{_format_timeframe(signal.timeframe)} 기준 {signal.market_state} 상태에서 발생한 알림"
     return "트레이딩 조건이 감지되었습니다."
+
+
+def _judgment_for_signal(signal: Signal, template: dict[str, Any]) -> str:
+    edge_rule = signal.payload.get("edge_rule")
+    if isinstance(edge_rule, dict) and edge_rule.get("judgment"):
+        return str(edge_rule["judgment"])
+    return str(template["judgment"])
 
 
 def _format_reason(signal: Signal) -> str:

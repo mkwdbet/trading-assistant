@@ -2,6 +2,7 @@
   dashboard: "/api/v1/dashboard",
   strategies: "/api/v1/strategies",
   conditions: "/api/v1/conditions",
+  edgeRules: "/api/v1/edge-rules",
   backtestStrategies: "/api/v1/backtest-strategies",
   backtestStrategyPerformance: "/api/v1/backtest-strategies/performance",
   backtests: "/api/v1/backtests",
@@ -35,6 +36,11 @@ document.querySelectorAll(".nav button").forEach((button) => {
 document.getElementById("signalFilters").addEventListener("submit", (event) => {
   event.preventDefault();
   loadSignals(new FormData(event.currentTarget));
+});
+
+document.getElementById("edgeRuleForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await saveEdgeRule(new FormData(event.currentTarget));
 });
 
 document.getElementById("backtestForm").addEventListener("submit", async (event) => {
@@ -248,6 +254,66 @@ async function loadConditions() {
     .join("");
   renderConditionParamFields();
   renderSelectedConditions();
+}
+
+async function loadEdgeRules() {
+  const rows = await getJson(api.edgeRules);
+  renderSummaryTable(
+    "edgeRulesTable",
+    ["Name", "Ticker", "TF", "Direction", "Rule", "Tolerance", "Cooldown", ""],
+    rows,
+    (row) => [
+      row.name,
+      row.symbol,
+      row.timeframe.toUpperCase(),
+      row.direction,
+      `${row.ma_type.toUpperCase()}${row.ma_period}`,
+      `${(Number(row.tolerance_pct) * 100).toFixed(2)}%`,
+      `${row.cooldown_hours}h`,
+      `<button type="button" data-edge-delete="${row.id}">Delete</button>`,
+    ],
+  );
+  document.querySelectorAll("[data-edge-delete]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await deleteEdgeRule(Number(button.dataset.edgeDelete));
+    });
+  });
+}
+
+async function saveEdgeRule(formData) {
+  const payload = {
+    name: formData.get("name"),
+    symbol: formData.get("symbol"),
+    timeframe: formData.get("edge_timeframe"),
+    direction: formData.get("direction"),
+    ma_type: "sma",
+    ma_period: Number(formData.get("ma_period")),
+    tolerance_pct: Number(formData.get("tolerance_pct")) / 100,
+    cooldown_hours: Number(formData.get("cooldown_hours")),
+    thesis: formData.get("thesis"),
+    judgment: formData.get("judgment"),
+    enabled: true,
+  };
+  const response = await fetch(api.edgeRules, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(error.detail || "Edge rule save failed");
+  }
+  document.getElementById("edgeRuleForm").reset();
+  await loadEdgeRules();
+}
+
+async function deleteEdgeRule(ruleId) {
+  const response = await fetch(`${api.edgeRules}/${ruleId}`, { method: "DELETE" });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(error.detail || "Edge rule delete failed");
+  }
+  await loadEdgeRules();
 }
 
 async function loadBacktestRuns() {
@@ -1164,6 +1230,7 @@ async function boot() {
   setDefaultBacktestDates();
   await loadStrategies();
   await loadConditions();
+  await loadEdgeRules();
   await loadBacktestStrategies();
   await Promise.all([
     loadDashboard(),
