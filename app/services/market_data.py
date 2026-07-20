@@ -45,10 +45,26 @@ class BinanceFuturesMarketData:
         price_after = float(klines[-1][4])
         return PriceWindow(price_after=price_after, max_price=max(highs), min_price=min(lows))
 
+    async def get_klines(
+        self,
+        *,
+        symbol: str,
+        interval: str,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> list[list]:
+        return await self._get_klines(
+            symbol=normalize_binance_futures_symbol(symbol),
+            interval=interval,
+            start_time=start_time,
+            end_time=end_time,
+        )
+
     async def _get_klines(
         self,
         *,
         symbol: str,
+        interval: str = "1m",
         start_time: datetime,
         end_time: datetime,
     ) -> list[list]:
@@ -63,7 +79,7 @@ class BinanceFuturesMarketData:
                     f"{self.base_url}/fapi/v1/klines",
                     params={
                         "symbol": symbol,
-                        "interval": "1m",
+                        "interval": interval,
                         "startTime": current_start,
                         "endTime": end_ms,
                         "limit": 1000,

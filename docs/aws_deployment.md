@@ -111,6 +111,19 @@ Expected:
 {"status":"ok","env":"production"}
 ```
 
+Check dashboard:
+
+```bash
+curl -I https://alerts.your-domain.com/dashboard
+curl https://alerts.your-domain.com/api/v1/dashboard
+```
+
+When using the current EC2 IP without a domain:
+
+```text
+http://3.34.230.202/dashboard
+```
+
 ## 6. Test Webhook
 
 ```bash
@@ -157,6 +170,13 @@ Update app:
 
 ```bash
 git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+If GitHub auth is not available, copy the changed files to the server and then run:
+
+```bash
+cd /home/ubuntu/trading-assistant
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 

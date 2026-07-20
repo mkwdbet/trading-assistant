@@ -30,7 +30,7 @@ def format_stats_embed(stats: dict) -> dict:
         )
 
     return {
-        "title": "TradingAssistant Signal Stats",
+        "title": "AlphaForge Signal Stats",
         "color": 0x3498DB,
         "description": f"Total Signals: {stats['total_signals']}",
         "fields": [

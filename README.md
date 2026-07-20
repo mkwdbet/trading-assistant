@@ -1,4 +1,4 @@
-# Trading Assistant (MVP v1)
+# AlphaForge (MVP v1)
 
 개인용 트레이딩 알림 비서 MVP입니다. TradingView webhook을 받아 전략 플러그인을 평가하고, 신호를 DB에 저장한 뒤 Discord 알림을 보냅니다.
 
@@ -241,7 +241,7 @@ TradingView에서 exchange prefix까지 포함해 보내고 싶으면 `symbol`�
 
 ```env
 DISCORD_WEBHOOK_URL=복사한_웹훅_URL
-DISCORD_USERNAME=Trading Assistant
+DISCORD_USERNAME=AlphaForge
 ENABLE_DISCORD_NOTIFICATIONS=true
 ```
 
@@ -314,3 +314,70 @@ https://YOUR_DOMAIN/api/v1/webhooks/tradingview/YOUR_SECRET
 ```
 
 운영 구성은 Docker Compose + Caddy HTTPS reverse proxy를 사용합니다.
+## Web Dashboard
+
+The app serves a built-in research dashboard from the same FastAPI process.
+
+Local URL:
+
+```text
+http://127.0.0.1:8000/dashboard
+```
+
+Production URL:
+
+```text
+http://YOUR_SERVER_OR_DOMAIN/dashboard
+```
+
+Dashboard API endpoints:
+
+```text
+GET /api/v1/dashboard
+GET /api/v1/signals
+GET /api/v1/signals/{signal_id}
+GET /api/v1/performance
+GET /api/v1/strategy-analysis
+GET /api/v1/research
+GET /api/v1/settings
+```
+
+The dashboard is a dark, static HTML/CSS/JavaScript interface under
+`app/static/dashboard`. It uses the existing SQLite `signals` and
+`signal_outcomes` tables, so no extra build step is required.
+
+Research views:
+
+- Dashboard: total signals, LONG/SHORT counts, recent activity, horizon returns, win rates.
+- Signals: filterable signal list with 24h and 72h returns.
+- Signal detail: entry metrics and 12h/24h/48h/72h outcome detail.
+- Performance: symbol-level performance comparison.
+- Strategy Analysis: signal-type performance comparison and best signal highlight.
+- Research: top winners and losers for later strategy review.
+- Settings: tracked symbols and safe Discord/outcome-tracking status.
+
+## Backtest Lab MVP
+
+The dashboard includes a first Backtest Lab for strategy research.
+
+API:
+
+```text
+GET /api/v1/conditions
+POST /api/v1/backtests/run
+GET /api/v1/backtests
+```
+
+Current MVP supports:
+
+- Binance futures candles
+- 4H timeframe
+- LONG / SHORT / BOTH
+- Condition Registry based checkboxes
+- ATR-based stop loss
+- Risk-reward based take profit
+- Max holding time
+- Conservative same-candle handling: SL is counted first when TP and SL are both touched
+
+Returned metrics include total trades, wins, losses, win rate, average return,
+expectancy, profit factor, MDD, average MFE, average MAE, and max consecutive losses.

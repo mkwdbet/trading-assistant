@@ -1,5 +1,5 @@
 //@version=5
-indicator("Trading Assistant BTCUSDT.P SMA Alert", overlay=true)
+indicator("AlphaForge BTCUSDT.P SMA Alert", overlay=true)
 
 sma7 = ta.sma(close, 7)
 sma21 = ta.sma(close, 21)
@@ -23,21 +23,44 @@ else if sma7 < sma60
 previousState = state[1]
 strongBullCompleted = previousState != "STRONG_BULL" and state == "STRONG_BULL"
 strongBearCompleted = previousState != "STRONG_BEAR" and state == "STRONG_BEAR"
-strongBullSma21Touch = state == "STRONG_BULL" and math.abs(close - sma21) / sma21 <= touchTolerancePct
-strongBullSma60Touch = state == "STRONG_BULL" and math.abs(close - sma60) / sma60 <= touchTolerancePct
-strongBearSma21Touch = state == "STRONG_BEAR" and math.abs(close - sma21) / sma21 <= touchTolerancePct
-strongBearSma60Touch = state == "STRONG_BEAR" and math.abs(close - sma60) / sma60 <= touchTolerancePct
+strongBullSma21TouchNow = state == "STRONG_BULL" and math.abs(close - sma21) / sma21 <= touchTolerancePct
+strongBullSma60TouchNow = state == "STRONG_BULL" and math.abs(close - sma60) / sma60 <= touchTolerancePct
+strongBearSma21TouchNow = state == "STRONG_BEAR" and math.abs(close - sma21) / sma21 <= touchTolerancePct
+strongBearSma60TouchNow = state == "STRONG_BEAR" and math.abs(close - sma60) / sma60 <= touchTolerancePct
 
-eventDetected = strongBullCompleted or strongBearCompleted or strongBullSma21Touch or strongBullSma60Touch or strongBearSma21Touch or strongBearSma60Touch
-shouldAlert = barstate.isconfirmed and eventDetected
+strongBullSma21Touch = strongBullSma21TouchNow and not strongBullSma21TouchNow[1]
+strongBullSma60Touch = strongBullSma60TouchNow and not strongBullSma60TouchNow[1]
+strongBearSma21Touch = strongBearSma21TouchNow and not strongBearSma21TouchNow[1]
+strongBearSma60Touch = strongBearSma60TouchNow and not strongBearSma60TouchNow[1]
+
+trendEventDetected = barstate.isconfirmed and (strongBullCompleted or strongBearCompleted)
+touchEventDetected = strongBullSma21Touch or strongBullSma60Touch or strongBearSma21Touch or strongBearSma60Touch
+
+string touchAlertKey = ""
+if strongBullSma21Touch
+    touchAlertKey := "strong_bull_sma21_touch"
+else if strongBullSma60Touch
+    touchAlertKey := "strong_bull_sma60_touch"
+else if strongBearSma21Touch
+    touchAlertKey := "strong_bear_sma21_touch"
+else if strongBearSma60Touch
+    touchAlertKey := "strong_bear_sma60_touch"
+
+var int lastTouchAlertBar = na
+var string lastTouchAlertKey = ""
+canSendTouchAlert = touchEventDetected and (lastTouchAlertBar != bar_index or lastTouchAlertKey != touchAlertKey)
+shouldAlert = trendEventDetected or canSendTouchAlert
+symbolValue = syminfo.tickerid
+timeframeValue = timeframe.period
+occurredAtValue = str.format_time(timenow, "yyyy-MM-dd'T'HH:mm:ss'Z'", "UTC")
 
 payload = "{" +
-     "\"symbol\":\"{{exchange}}:{{ticker}}\"," +
-     "\"timeframe\":\"{{interval}}\"," +
+     "\"symbol\":\"" + symbolValue + "\"," +
+     "\"timeframe\":\"" + timeframeValue + "\"," +
      "\"event\":\"tradingview_alert\"," +
      "\"message\":\"SMA 4H update\"," +
      "\"price\":" + str.tostring(close) + "," +
-     "\"occurred_at\":\"{{time}}\"," +
+     "\"occurred_at\":\"" + occurredAtValue + "\"," +
      "\"data\":{" +
      "\"sma7\":" + str.tostring(sma7) + "," +
      "\"sma21\":" + str.tostring(sma21) + "," +
@@ -47,4 +70,7 @@ payload = "{" +
      "}"
 
 if shouldAlert
-    alert(payload, alert.freq_once_per_bar_close)
+    if canSendTouchAlert
+        lastTouchAlertBar := bar_index
+        lastTouchAlertKey := touchAlertKey
+    alert(payload, alert.freq_once_per_bar)

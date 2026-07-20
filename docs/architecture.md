@@ -1,4 +1,4 @@
-# Trading Assistant Architecture
+# AlphaForge Architecture
 
 ## 1. System Architecture
 
@@ -14,7 +14,7 @@ Flow:
 6. Each strategy evaluates state changes and events from the normalized webhook payload.
 7. Generated signals are de-duplicated, saved to the database, then sent to enabled notification channels.
 8. Latest strategy state is saved separately from signal events.
-9. Signals can be queried through REST API and later exposed in a web dashboard.
+9. Signals can be queried through REST API and exposed in a web dashboard.
 
 Recommended deployment shape:
 
@@ -34,6 +34,7 @@ app/
     models.py
     session.py
   services/
+    dashboard_analytics.py
     kakao.py
     signal_repository.py
     strategy_engine.py
@@ -41,6 +42,11 @@ app/
     base.py
     loader.py
   main.py
+  static/
+    dashboard/
+      index.html
+      styles.css
+      app.js
 strategies/
   sma_strategy.py
 docs/
@@ -202,7 +208,43 @@ Query parameters:
 - `symbol`
 - `timeframe`
 - `strategy_name`
+- `direction`
+- `signal_type`
+- `start`
+- `end`
 - `limit`, default `100`, max `500`
+
+### Dashboard and research APIs
+
+The built-in dashboard is served at `/dashboard` and uses these APIs:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /dashboard` | Summary counts, horizon performance, win rates, chart series |
+| `GET /signals/{signal_id}` | Signal detail with outcome map |
+| `GET /performance` | Symbol-level performance comparison |
+| `GET /strategy-analysis` | Signal-type performance comparison |
+| `GET /research` | Top winner and loser signals |
+| `GET /settings` | Tracked symbols and masked notification/tracking settings |
+| `GET /conditions` | Condition registry for Backtest Lab |
+| `POST /backtests/run` | Run and store a backtest |
+| `GET /backtests` | List stored backtest runs |
+
+The frontend is static HTML/CSS/JavaScript in `app/static/dashboard` and uses Chart.js from a CDN. This keeps AWS deployment identical to the API deployment.
+
+### Backtest Lab MVP
+
+Backtest Lab is the first step toward a strategy research platform. It uses a condition registry instead of hard-coded UI options. The frontend reads condition metadata from `/api/v1/conditions`, sends selected condition IDs to `/api/v1/backtests/run`, and renders metrics plus trades.
+
+MVP execution model:
+
+- Fetch Binance futures candles.
+- Calculate SMA, RSI, ATR, and volume averages.
+- Enter when all selected conditions are true.
+- Use ATR multiplier for stop distance.
+- Use risk-reward ratio for target distance.
+- Exit on TP, SL, or max holding time.
+- If TP and SL are both touched in the same candle, count SL first.
 
 ## 6. TradingView Integration
 
@@ -261,7 +303,7 @@ Environment variables:
 
 ```text
 DISCORD_WEBHOOK_URL=
-DISCORD_USERNAME=Trading Assistant
+DISCORD_USERNAME=AlphaForge
 ENABLE_DISCORD_NOTIFICATIONS=true
 ```
 
@@ -474,7 +516,7 @@ Phase 2:
 
 Phase 3:
 
-- Web dashboard
+- Expand web dashboard with auth and editable settings
 - User login
 - Strategy config UI
 - Backtesting import/export
