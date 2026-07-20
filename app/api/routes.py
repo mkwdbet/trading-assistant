@@ -35,6 +35,7 @@ from app.services.edge_alert_rules import (
     evaluate_edge_alert_rules,
     list_edge_alert_rules,
 )
+from app.services.edge_rule_evaluator import evaluate_saved_edge_rules
 from app.services.notifier import NotificationService
 from app.services.outcome_tracker import record_due_outcomes
 from app.services.signal_repository import (
@@ -75,6 +76,11 @@ def post_edge_rule(payload: dict, db: Session = Depends(get_db)) -> dict:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Edge rule save failed: {exc}",
         ) from exc
+
+
+@router.post("/edge-rules/evaluate", tags=["edge-rules"])
+async def post_evaluate_edge_rules(db: Session = Depends(get_db)) -> dict:
+    return await evaluate_saved_edge_rules(db)
 
 
 @router.delete("/edge-rules/{rule_id}", tags=["edge-rules"])

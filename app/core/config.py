@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     enable_discord_notifications: bool = False
     enable_outcome_tracking: bool = True
     outcome_tracker_interval_seconds: int = 300
+    enable_edge_rule_evaluator: bool = True
+    edge_rule_evaluator_interval_seconds: int = 3600
 
 
 @lru_cache

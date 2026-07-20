@@ -3,6 +3,7 @@
   strategies: "/api/v1/strategies",
   conditions: "/api/v1/conditions",
   edgeRules: "/api/v1/edge-rules",
+  edgeRulesEvaluate: "/api/v1/edge-rules/evaluate",
   backtestStrategies: "/api/v1/backtest-strategies",
   backtestStrategyPerformance: "/api/v1/backtest-strategies/performance",
   backtests: "/api/v1/backtests",
@@ -41,6 +42,10 @@ document.getElementById("signalFilters").addEventListener("submit", (event) => {
 document.getElementById("edgeRuleForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   await saveEdgeRule(new FormData(event.currentTarget));
+});
+
+document.getElementById("evaluateEdgeRulesButton").addEventListener("click", async () => {
+  await evaluateEdgeRulesNow();
 });
 
 document.getElementById("backtestForm").addEventListener("submit", async (event) => {
@@ -314,6 +319,19 @@ async function deleteEdgeRule(ruleId) {
     throw new Error(error.detail || "Edge rule delete failed");
   }
   await loadEdgeRules();
+}
+
+async function evaluateEdgeRulesNow() {
+  const target = document.getElementById("edgeEvaluationResult");
+  target.textContent = "Evaluating saved rules...";
+  const response = await fetch(api.edgeRulesEvaluate, { method: "POST" });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(error.detail || "Edge rule evaluation failed");
+  }
+  const result = await response.json();
+  target.textContent = `Evaluated ${result.rules_evaluated} · matched ${result.rules_matched} · alerts ${result.signals_created} · duplicates ${result.duplicates_skipped} · failed ${result.rules_failed}`;
+  await Promise.all([loadEdgeRules(), loadSignals()]);
 }
 
 async function loadBacktestRuns() {

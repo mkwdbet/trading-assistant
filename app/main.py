@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import router
 from app.core.config import settings
 from app.db.session import init_db
+from app.services.edge_rule_evaluator import run_edge_rule_evaluator
 from app.services.outcome_tracker import run_outcome_tracker
 
 
@@ -25,6 +26,12 @@ def create_app() -> FastAPI:
             asyncio.create_task(
                 run_outcome_tracker(
                     interval_seconds=settings.outcome_tracker_interval_seconds,
+                )
+            )
+        if settings.enable_edge_rule_evaluator:
+            asyncio.create_task(
+                run_edge_rule_evaluator(
+                    interval_seconds=settings.edge_rule_evaluator_interval_seconds,
                 )
             )
 
