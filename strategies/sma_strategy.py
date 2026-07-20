@@ -5,6 +5,7 @@ from app.strategies.base import BaseStrategy, StrategyContext, StrategySignal
 class SmaStrategy(BaseStrategy):
     name = "sma_strategy"
     description = "4-hour SMA 7/21/60 state and touch alert strategy."
+    enabled = False
     symbols = {"BTCUSDT.P", "BINANCE:BTCUSDT.P"}
     timeframes = {"240", "4h", "4H"}
     touch_tolerance_pct = 0.001

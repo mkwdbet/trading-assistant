@@ -16,7 +16,9 @@ def discover_strategies(package_name: str = "strategies") -> list[BaseStrategy]:
                 continue
             if obj.__module__ != module.__name__:
                 continue
-            strategies.append(obj())
+            strategy = obj()
+            if not strategy.enabled:
+                continue
+            strategies.append(strategy)
 
     return sorted(strategies, key=lambda strategy: strategy.name)
-

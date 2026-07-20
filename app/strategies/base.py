@@ -27,6 +27,7 @@ class StrategyContext:
 class BaseStrategy(ABC):
     name: str
     description: str = ""
+    enabled: bool = True
     symbols: set[str] | None = None
     timeframes: set[str] | None = None
 
