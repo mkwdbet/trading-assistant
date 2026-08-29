@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.schemas import TradingViewWebhookPayload
+from app.schemas import SignalCreate, TradingViewWebhookPayload
 from app.services.dashboard_analytics import (
     build_dashboard_summary,
     build_settings_summary,
@@ -130,3 +130,38 @@ def get_signal_detail(signal_id: int, db: Session = Depends(get_db)) -> dict:
 @router.get("/settings", tags=["dashboard"])
 def get_settings_summary() -> dict:
     return build_settings_summary()
+
+
+@router.post("/notifications/discord/test", tags=["notifications"])
+async def post_discord_test_notification() -> dict[str, str]:
+    if not settings.enable_discord_notifications:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Discord notifications are disabled.",
+        )
+    if not settings.discord_webhook_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="DISCORD_WEBHOOK_URL is not configured.",
+        )
+
+    signal = SignalCreate(
+        symbol="SYSTEM",
+        timeframe="test",
+        strategy_name="long_term_edge_radar",
+        signal_type="희귀 기술적 우위",
+        market_state="SYSTEM_CHECK",
+        situation="Discord 연결 확인",
+        dedupe_key=None,
+        message="Discord alert path is connected.",
+        occurred_at=datetime.now(timezone.utc),
+        payload={
+            "reason": ["웹 대시보드에서 보낸 테스트 알림", "Discord webhook 연결 확인"],
+            "edge_rule": {
+                "thesis": "Long-Term Edge Radar 알림 경로 테스트",
+                "judgment": "이 메시지가 보이면 저장된 신호 발생 시 Discord 알림을 받을 수 있습니다.",
+            },
+        },
+    )
+    await NotificationService().send_signal(signal)
+    return {"status": "sent"}

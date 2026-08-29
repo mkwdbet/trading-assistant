@@ -171,6 +171,11 @@ main {
   text-align: right;
 }
 
+.status-text.left {
+  margin-top: 10px;
+  text-align: left;
+}
+
 .rule-form {
   display: grid;
   gap: 16px;
@@ -282,6 +287,15 @@ button:hover {
   background: var(--accent);
   border-color: var(--accent);
   color: #09100a;
+}
+
+.secondary {
+  background: transparent;
+}
+
+.full-button {
+  margin-top: 16px;
+  width: 100%;
 }
 
 .danger {

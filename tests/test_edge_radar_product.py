@@ -34,7 +34,9 @@ def test_dashboard_is_edge_radar_only() -> None:
     assert 'class="metric-card"' in html
     assert 'class="workspace"' in html
     assert 'class="rule-form"' in html
+    assert 'id="sendTestAlertButton"' in html
     assert "discordStatus" in js
+    assert "/api/v1/notifications/discord/test" in js
     assert "Backtest" not in html
     assert "Strategy Research" not in html
     assert "backtests" not in js

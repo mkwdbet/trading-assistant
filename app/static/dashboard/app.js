@@ -3,12 +3,14 @@ const api = {
   settings: "/api/v1/settings",
   edgeRules: "/api/v1/edge-rules",
   evaluate: "/api/v1/edge-rules/evaluate",
+  testAlert: "/api/v1/notifications/discord/test",
   signals: "/api/v1/signals?limit=100",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("edgeRuleForm").addEventListener("submit", saveRule);
   document.getElementById("evaluateNowButton").addEventListener("click", evaluateNow);
+  document.getElementById("sendTestAlertButton").addEventListener("click", sendTestAlert);
   refreshAll();
 });
 
@@ -134,6 +136,18 @@ async function evaluateNow() {
   const result = await response.json();
   target.textContent = `평가 ${result.rules_evaluated}, 매칭 ${result.rules_matched}, 알림 ${result.signals_created}`;
   await refreshAll();
+}
+
+async function sendTestAlert() {
+  const target = document.getElementById("testAlertStatus");
+  target.textContent = "전송 중...";
+  const response = await fetch(api.testAlert, { method: "POST" });
+  if (!response.ok) {
+    const error = await response.json();
+    target.textContent = error.detail || "전송 실패";
+    return;
+  }
+  target.textContent = "테스트 알림 전송 완료";
 }
 
 function renderTable(id, headers, rows, mapper, emptyText) {
