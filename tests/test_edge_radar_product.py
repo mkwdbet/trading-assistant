@@ -30,7 +30,11 @@ def test_dashboard_is_edge_radar_only() -> None:
     js = (ROOT / "app/static/dashboard/app.js").read_text(encoding="utf-8")
 
     assert "Long-Term Edge Radar" in html
-    assert "Rare edge rule" in html
+    assert "Rule Builder" in html
+    assert 'class="metric-card"' in html
+    assert 'class="workspace"' in html
+    assert 'class="rule-form"' in html
+    assert "discordStatus" in js
     assert "Backtest" not in html
     assert "Strategy Research" not in html
     assert "backtests" not in js

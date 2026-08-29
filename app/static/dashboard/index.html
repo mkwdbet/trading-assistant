@@ -7,127 +7,164 @@
     <link rel="stylesheet" href="/static/dashboard/styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Personal investing radar</p>
-        <h1>Long-Term Edge Radar</h1>
-      </div>
-      <button id="evaluateNowButton" type="button">Evaluate Now</button>
-    </header>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Long-term investing radar</p>
+          <h1>Long-Term Edge Radar</h1>
+          <p class="hero-subtitle">희귀한 장기 기술적 우위 구간만 조용히 감시합니다.</p>
+        </div>
+        <div class="hero-actions">
+          <button id="evaluateNowButton" class="primary" type="button">Evaluate Now</button>
+        </div>
+      </header>
 
-    <main>
-      <section class="metrics" aria-label="summary">
-        <article>
-          <span>Active Rules</span>
-          <strong id="activeRules">-</strong>
-        </article>
-        <article>
-          <span>Total Signals</span>
-          <strong id="totalSignals">-</strong>
-        </article>
-        <article>
-          <span>Last 30 Days</span>
-          <strong id="signals30d">-</strong>
-        </article>
-        <article>
-          <span>Evaluator</span>
-          <strong id="evaluatorStatus">-</strong>
-        </article>
-      </section>
+      <main>
+        <section class="metrics" aria-label="summary">
+          <article class="metric-card">
+            <span>Active Rules</span>
+            <strong id="activeRules">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Total Signals</span>
+            <strong id="totalSignals">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Last 30 Days</span>
+            <strong id="signals30d">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Evaluator</span>
+            <strong id="evaluatorStatus">-</strong>
+          </article>
+        </section>
 
-      <section class="panel split">
-        <div>
-          <div class="section-title">
-            <p class="eyebrow">Rare edge rule</p>
-            <h2>감시 조건 추가</h2>
+        <section class="workspace">
+          <section class="panel rule-builder">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Rule Builder</p>
+                <h2>감시 조건 추가</h2>
+              </div>
+              <p id="saveStatus" class="status-text"></p>
+            </div>
+
+            <form id="edgeRuleForm" class="rule-form">
+              <label class="field field-wide">
+                <span>Rule Name</span>
+                <input name="name" value="S&P 500 weekly SMA60 touch" required />
+              </label>
+
+              <label class="field">
+                <span>Symbol</span>
+                <input name="symbol" value="SPX" placeholder="SPX, SPY, QQQ, AAPL" required />
+              </label>
+
+              <label class="field">
+                <span>Timeframe</span>
+                <select name="timeframe">
+                  <option value="1w">1W</option>
+                  <option value="1d">1D</option>
+                  <option value="4h">4H</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Direction</span>
+                <select name="direction">
+                  <option value="LONG">LONG</option>
+                  <option value="WATCH">WATCH</option>
+                  <option value="SHORT">SHORT</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>SMA Period</span>
+                <input name="ma_period" type="number" min="1" value="60" required />
+              </label>
+
+              <label class="field">
+                <span>Tolerance</span>
+                <div class="input-suffix">
+                  <input name="tolerance_pct" type="number" min="0" step="0.1" value="0.5" required />
+                  <span>%</span>
+                </div>
+              </label>
+
+              <label class="field">
+                <span>Cooldown</span>
+                <div class="input-suffix">
+                  <input name="cooldown_hours" type="number" min="1" value="168" required />
+                  <span>hours</span>
+                </div>
+              </label>
+
+              <label class="field field-wide">
+                <span>Thesis</span>
+                <textarea name="thesis" rows="3">주봉 기준 S&P 500이 SMA60에 닿는 드문 장기 매수 관심 구간</textarea>
+              </label>
+
+              <label class="field field-wide">
+                <span>Judgment</span>
+                <textarea name="judgment" rows="3">장기투자 관점에서 희귀한 기술적 우위 후보입니다. 즉시 진입이 아니라 차트 확인용 알림입니다.</textarea>
+              </label>
+
+              <div class="form-actions field-wide">
+                <button class="primary" type="submit">Save Rule</button>
+              </div>
+            </form>
+          </section>
+
+          <aside class="side-panel">
+            <section class="panel">
+              <div class="section-heading compact">
+                <p class="eyebrow">System</p>
+                <h2>현재 상태</h2>
+              </div>
+              <dl class="status-list">
+                <div>
+                  <dt>Discord</dt>
+                  <dd id="discordStatus">-</dd>
+                </div>
+                <div>
+                  <dt>Mode</dt>
+                  <dd id="productMode">-</dd>
+                </div>
+                <div>
+                  <dt>Interval</dt>
+                  <dd id="checkInterval">-</dd>
+                </div>
+              </dl>
+            </section>
+          </aside>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Watchlist</p>
+              <h2>저장된 장기 조건</h2>
+            </div>
+            <span id="evaluationResult" class="status-text"></span>
           </div>
-          <form id="edgeRuleForm" class="rule-form">
-            <label>
-              <span>Rule Name</span>
-              <input name="name" value="S&P 500 weekly SMA60 touch" required />
-            </label>
-            <label>
-              <span>Symbol</span>
-              <input name="symbol" value="SPX" placeholder="SPX, SPY, QQQ, AAPL" required />
-            </label>
-            <label>
-              <span>Timeframe</span>
-              <select name="timeframe">
-                <option value="1w">1W</option>
-                <option value="1d">1D</option>
-                <option value="4h">4H</option>
-              </select>
-            </label>
-            <label>
-              <span>Direction</span>
-              <select name="direction">
-                <option value="LONG">LONG</option>
-                <option value="WATCH">WATCH</option>
-                <option value="SHORT">SHORT</option>
-              </select>
-            </label>
-            <label>
-              <span>SMA Period</span>
-              <input name="ma_period" type="number" min="1" value="60" required />
-            </label>
-            <label>
-              <span>Tolerance %</span>
-              <input name="tolerance_pct" type="number" min="0" step="0.1" value="0.5" required />
-            </label>
-            <label>
-              <span>Cooldown Hours</span>
-              <input name="cooldown_hours" type="number" min="1" value="168" required />
-            </label>
-            <label class="wide">
-              <span>Thesis</span>
-              <textarea name="thesis" rows="3">주봉 기준 S&P 500이 SMA60에 닿는 드문 장기 매수 관심 구간</textarea>
-            </label>
-            <label class="wide">
-              <span>Judgment</span>
-              <textarea name="judgment" rows="3">장기투자 관점에서 희귀한 기술적 우위 후보입니다. 즉시 진입이 아니라 차트 확인용 알림입니다.</textarea>
-            </label>
-            <button class="primary wide" type="submit">Save Rule</button>
-          </form>
-          <p class="status" id="saveStatus"></p>
-        </div>
-
-        <aside class="note">
-          <h2>운영 방식</h2>
-          <p>
-            이 프로젝트는 단타 매매 알림이 아니라, 자주 오지 않는 장기 기술적 우위만 감시합니다.
-            현재 웹 규칙은 SMA 근접 조건에 집중하고, 더 복잡한 아이디어는 Codex와 함께 코드 전략으로 추가합니다.
-          </p>
-          <ul>
-            <li>서버가 켜져 있으면 1시간마다 자동 평가</li>
-            <li>조건 충족 시 Discord 알림 전송</li>
-            <li>동일 규칙은 cooldown 동안 중복 방지</li>
-          </ul>
-        </aside>
-      </section>
-
-      <section class="panel">
-        <div class="section-title row">
-          <div>
-            <p class="eyebrow">Watchlist</p>
-            <h2>저장된 장기 조건</h2>
+          <div class="table-wrap">
+            <table id="rulesTable"></table>
           </div>
-          <span id="evaluationResult" class="status"></span>
-        </div>
-        <div class="table-wrap">
-          <table id="rulesTable"></table>
-        </div>
-      </section>
+        </section>
 
-      <section class="panel">
-        <div class="section-title">
-          <p class="eyebrow">History</p>
-          <h2>알림 이력</h2>
-        </div>
-        <div class="table-wrap">
-          <table id="signalsTable"></table>
-        </div>
-      </section>
-    </main>
+        <section class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">History</p>
+              <h2>알림 이력</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="signalsTable"></table>
+          </div>
+        </section>
+      </main>
+    </div>
 
     <script src="/static/dashboard/app.js"></script>
   </body>

@@ -38,6 +38,15 @@ function renderSummary(dashboard, settings) {
   document.getElementById("evaluatorStatus").textContent = settings.edge_rule_evaluator.enabled
     ? `${Math.round(settings.edge_rule_evaluator.interval_seconds / 60)}m`
     : "off";
+  document.getElementById("discordStatus").textContent = settings.discord.configured
+    ? settings.discord.enabled
+      ? "enabled"
+      : "configured"
+    : "not configured";
+  document.getElementById("productMode").textContent = settings.product.mode.replaceAll("_", " ");
+  document.getElementById("checkInterval").textContent = settings.edge_rule_evaluator.enabled
+    ? `${Math.round(settings.edge_rule_evaluator.interval_seconds / 60)} minutes`
+    : "off";
 }
 
 function renderRules(rules) {
@@ -130,7 +139,7 @@ async function evaluateNow() {
 function renderTable(id, headers, rows, mapper, emptyText) {
   const table = document.getElementById(id);
   if (!rows.length) {
-    table.innerHTML = `<tbody><tr><td>${emptyText}</td></tr></tbody>`;
+    table.innerHTML = `<tbody><tr><td class="empty-row" colspan="${headers.length}">${emptyText}</td></tr></tbody>`;
     return;
   }
   const head = `<thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>`;
