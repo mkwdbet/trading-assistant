@@ -30,10 +30,11 @@ def test_dashboard_is_edge_radar_only() -> None:
     js = (ROOT / "app/static/dashboard/app.js").read_text(encoding="utf-8")
 
     assert "Long-Term Edge Radar" in html
-    assert "아이디어 추가 방식" in html
+    assert "신호별 진행 상태" in html
     assert 'class="metric-card"' in html
     assert 'class="workspace"' in html
-    assert 'class="workflow-grid"' in html
+    assert 'id="signalBoard"' in html
+    assert "renderSignalBoard" in js
     assert 'id="sendTestAlertButton"' in html
     assert "discordStatus" in js
     assert "/api/v1/notifications/discord/test" in js
@@ -68,6 +69,9 @@ def test_dashboard_summary_counts_edge_rules() -> None:
     assert summary["counts"]["total_rules"] == 1
     assert summary["counts"]["total_signals"] == 0
     assert summary["rules_by_timeframe"] == {"1w": 1}
+    assert summary["rule_summaries"][0]["name"] == "S&P 500 weekly SMA60 touch"
+    assert summary["rule_summaries"][0]["signal_count"] == 0
+    assert summary["rule_summaries"][0]["last_signal_at"] is None
 
 
 def test_settings_summary_reports_edge_evaluator_not_outcome_tracker() -> None:

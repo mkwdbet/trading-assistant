@@ -175,43 +175,108 @@ main {
   text-align: left;
 }
 
-.workflow-grid {
+.signal-board {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.workflow-grid article {
+.signal-card,
+.empty-card {
   background: #0b0f0c;
   border: 1px solid var(--line);
   border-radius: 8px;
-  min-height: 150px;
   padding: 18px;
 }
 
-.workflow-grid article span {
+.signal-card {
+  display: grid;
+  gap: 14px;
+  min-height: 220px;
+}
+
+.signal-card-top {
   align-items: center;
-  background: var(--accent);
-  border-radius: 999px;
-  color: #09100a;
-  display: inline-flex;
-  font-size: 13px;
-  font-weight: 800;
-  height: 28px;
-  justify-content: center;
-  margin-bottom: 14px;
-  width: 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
 }
 
-.workflow-grid h3 {
+.signal-card-top strong {
+  font-size: 18px;
+}
+
+.signal-card h3 {
   font-size: 16px;
-  margin: 0 0 10px;
+  line-height: 1.35;
+  margin: 0;
 }
 
-.workflow-grid p {
+.signal-card p {
   color: var(--muted);
   line-height: 1.6;
   margin: 0;
+}
+
+.signal-stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.signal-stats div {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.signal-stats span {
+  color: var(--muted);
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.signal-stats strong {
+  font-size: 20px;
+}
+
+.signal-card footer {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.pill {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pill.on {
+  background: rgba(139, 209, 124, 0.14);
+  border-color: rgba(139, 209, 124, 0.46);
+  color: var(--accent);
+}
+
+.empty-card {
+  color: var(--muted);
+  grid-column: 1 / -1;
+  min-height: 120px;
 }
 
 button {
@@ -326,7 +391,7 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 
-  .workflow-grid {
+  .signal-board {
     grid-template-columns: 1fr;
   }
 }

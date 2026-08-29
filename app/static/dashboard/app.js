@@ -22,6 +22,7 @@ async function refreshAll() {
   ]);
 
   renderSummary(dashboard, settings);
+  renderSignalBoard(dashboard.rule_summaries || []);
   renderRules(rules);
   renderSignals(signals);
 }
@@ -53,7 +54,7 @@ function renderSummary(dashboard, settings) {
 function renderRules(rules) {
   renderTable(
     "rulesTable",
-    ["Name", "Symbol", "TF", "Rule", "Tolerance", "Cooldown", ""],
+    ["Name", "Symbol", "TF", "Rule", "Tolerance", "Cooldown", "Status", ""],
     rules,
     (rule) => [
       rule.name,
@@ -62,6 +63,7 @@ function renderRules(rules) {
       `${rule.ma_type.toUpperCase()}${rule.ma_period} touch`,
       `${formatPercent(rule.tolerance_pct)}%`,
       `${rule.cooldown_hours}h`,
+      rule.enabled ? `<span class="pill on">Watching</span>` : `<span class="pill">Paused</span>`,
       `<button class="danger" data-delete-rule="${rule.id}">Delete</button>`,
     ],
     "저장된 장기 조건이 없습니다."
@@ -73,6 +75,47 @@ function renderRules(rules) {
       refreshAll();
     });
   });
+}
+
+function renderSignalBoard(items) {
+  const board = document.getElementById("signalBoard");
+  if (!items.length) {
+    board.innerHTML = `<div class="empty-card">아직 감시 중인 신호가 없습니다.</div>`;
+    return;
+  }
+
+  board.innerHTML = items
+    .map(
+      (item) => `
+        <article class="signal-card">
+          <div class="signal-card-top">
+            <span class="pill ${item.enabled ? "on" : ""}">${item.status}</span>
+            <strong>${item.symbol}</strong>
+          </div>
+          <h3>${item.name}</h3>
+          <p>${item.timeframe.toUpperCase()} · ${item.rule} · ${formatPercent(item.tolerance_pct)}% tolerance</p>
+          <div class="signal-stats">
+            <div>
+              <span>Total</span>
+              <strong>${item.signal_count}</strong>
+            </div>
+            <div>
+              <span>30D</span>
+              <strong>${item.signals_30d}</strong>
+            </div>
+            <div>
+              <span>Last</span>
+              <strong>${item.last_signal_at ? formatShortDate(item.last_signal_at) : "None"}</strong>
+            </div>
+          </div>
+          <footer>
+            <span>${item.last_situation || "조건 대기 중"}</span>
+            <span>${formatNumber(item.last_price)}</span>
+          </footer>
+        </article>
+      `
+    )
+    .join("");
 }
 
 function renderSignals(rows) {
@@ -141,4 +184,13 @@ function formatNumber(value) {
 function formatDate(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+}
+
+function formatShortDate(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Seoul",
+  });
 }

@@ -1,4 +1,5 @@
-from collections import Counter
+import json
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -22,6 +23,7 @@ def build_dashboard_summary(db: Session, *, now: datetime | None = None) -> dict
             "signals_30d": _count_since(signals, now - timedelta(days=30)),
         },
         "latest_signal": _signal_row(signals[-1])["signal"] if signals else None,
+        "rule_summaries": _rule_summaries(rules, signals, now=now),
         "rules_by_timeframe": dict(Counter(rule.timeframe for rule in rules)),
         "signals_by_symbol": dict(Counter(signal.symbol for signal in signals)),
         "recent_signals": [_signal_row(signal)["signal"] for signal in reversed(signals[-10:])],
@@ -85,6 +87,46 @@ def _signals(db: Session) -> list[Signal]:
     return list(db.scalars(select(Signal).order_by(Signal.occurred_at.asc())))
 
 
+def _rule_summaries(
+    rules: list[EdgeAlertRule],
+    signals: list[Signal],
+    *,
+    now: datetime,
+) -> list[dict[str, Any]]:
+    cutoff_30d = now - timedelta(days=30)
+    signals_by_rule: dict[int, list[Signal]] = defaultdict(list)
+    for signal in signals:
+        rule_id = _rule_id_from_signal(signal)
+        if rule_id is not None:
+            signals_by_rule[rule_id].append(signal)
+
+    summaries = []
+    for rule in rules:
+        rule_signals = signals_by_rule.get(rule.id, [])
+        latest = rule_signals[-1] if rule_signals else None
+        summaries.append(
+            {
+                "id": rule.id,
+                "name": rule.name,
+                "symbol": rule.symbol,
+                "timeframe": rule.timeframe,
+                "direction": rule.direction,
+                "rule": f"{rule.ma_type.upper()}{rule.ma_period} touch",
+                "tolerance_pct": rule.tolerance_pct,
+                "cooldown_hours": rule.cooldown_hours,
+                "enabled": bool(rule.enabled),
+                "status": "watching" if rule.enabled else "paused",
+                "signal_count": len(rule_signals),
+                "signals_30d": sum(1 for signal in rule_signals if _utc(signal.occurred_at) >= _utc(cutoff_30d)),
+                "last_signal_at": latest.occurred_at.isoformat() if latest else None,
+                "last_price": latest.current_price or latest.entry_price if latest else None,
+                "last_situation": latest.situation if latest else None,
+            }
+        )
+
+    return summaries
+
+
 def _signal_row(signal: Signal) -> dict[str, Any]:
     return {
         "signal": {
@@ -108,6 +150,20 @@ def _signal_row(signal: Signal) -> dict[str, Any]:
             "created_at": signal.created_at.isoformat() if signal.created_at else None,
         }
     }
+
+
+def _rule_id_from_signal(signal: Signal) -> int | None:
+    try:
+        payload = json.loads(signal.payload_json)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    edge_rule = payload.get("edge_rule") if isinstance(payload, dict) else None
+    if not isinstance(edge_rule, dict):
+        return None
+    try:
+        return int(edge_rule["id"])
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 def _count_since(signals: list[Signal], cutoff: datetime) -> int:
