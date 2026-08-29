@@ -56,19 +56,3 @@ class SignalRead(BaseModel):
 
     model_config = {"from_attributes": True}
 
-
-class SignalOutcomeRead(BaseModel):
-    id: int
-    signal_id: int
-    horizon_hours: int
-    target_time: datetime
-    evaluated_at: datetime
-    price_after: float
-    return_pct: float
-    max_price: float
-    min_price: float
-    max_favorable_return_pct: float
-    max_adverse_return_pct: float
-    created_at: datetime
-
-    model_config = {"from_attributes": True}

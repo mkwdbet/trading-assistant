@@ -1,541 +1,240 @@
-# AlphaForge Architecture
+# Long-Term Edge Radar Architecture
 
-## 1. System Architecture
+## Product Intent
 
-MVP is a long-term rare technical edge radar. It does not place trades.
+Long-Term Edge Radar is a personal investing assistant for rare, high-value technical moments.
 
-Flow:
+It is not a trading bot, not an order execution system, and no longer a short-term crypto signal system. Its job is to quietly monitor long-term conditions and send a Discord alert when a chart deserves attention.
 
-1. TradingView alert fires from a chart or Pine Script.
-2. TradingView sends a webhook to FastAPI.
-3. FastAPI validates the webhook secret.
-4. FastAPI evaluates saved Rare Edge Rules and plugin strategies.
-5. Strategy Engine auto-discovers strategy classes from `strategies/`.
-6. Rules and strategies evaluate state changes and rare technical edge events from the normalized webhook payload.
-7. Generated signals are de-duplicated, saved to the database, then sent to enabled notification channels.
-8. Latest strategy state is saved separately from signal events.
-9. Signals can be queried through REST API and exposed in a web dashboard.
+Primary example:
 
-Recommended deployment shape:
+```text
+S&P 500 weekly price touches or approaches SMA60
+```
 
-- Local MVP: FastAPI + SQLite + Docker Compose.
-- VPS/AWS MVP: FastAPI container + PostgreSQL + HTTPS reverse proxy.
-- Later: background queue, scheduler, dashboard, metrics, auth.
+## Runtime Flow
 
-## 2. Folder Structure
+```text
+FastAPI startup
+-> SQLite init
+-> background edge evaluator starts
+-> evaluator loads enabled Edge Rules
+-> market data provider fetches latest candles
+-> rule evaluator checks rare technical condition
+-> duplicate guard checks cooldown
+-> signal is stored
+-> Discord webhook alert is sent
+```
+
+Optional webhook flow:
+
+```text
+TradingView Alert
+-> POST /api/v1/webhooks/tradingview/{secret}
+-> matching saved Edge Rules are evaluated
+-> signal is stored and sent to Discord
+```
+
+## Main Components
 
 ```text
 app/
   api/
-    routes.py
+    routes.py                # Long-term radar API only
   core/
-    config.py
+    config.py                # .env settings
   db/
-    models.py
-    session.py
+    models.py                # signals and edge_alert_rules
+    session.py               # SQLite init
   services/
-    dashboard_analytics.py
-    kakao.py
-    signal_repository.py
-    strategy_engine.py
-  strategies/
-    base.py
-    loader.py
-  main.py
+    edge_alert_rules.py      # Rule CRUD and matching logic
+    edge_market_data.py      # Yahoo Finance data provider
+    edge_rule_evaluator.py   # Scheduled evaluator loop
+    signal_repository.py     # Signal persistence and duplicate guard
+    discord.py               # Discord webhook sender
+    discord_formatter.py     # Discord embed formatting
+    dashboard_analytics.py   # Dashboard summary data
   static/
     dashboard/
       index.html
       styles.css
       app.js
-strategies/
-  sma_strategy.py
-docs/
-  architecture.md
-Dockerfile
-docker-compose.yml
-.env.example
-.gitignore
-README.md
+  main.py
 ```
 
-`app/strategies/` contains framework code. Top-level `strategies/` contains user strategy plugins.
+## Database
 
-## 3. Strategy Model
+### `edge_alert_rules`
 
-The product direction is shifting from frequent short-term trading alerts to rare long-term technical edge alerts.
+Stores the long-term conditions to monitor.
 
-Primary examples:
-
-- S&P 500 weekly SMA60 touch
-- QQQ daily SMA200 touch
-- Long-term support retest after a large pullback
-- Rare resistance retest for risk management
-
-The web dashboard exposes `Edge Alerts`, where the user can add/delete ticker-based rules. A rule is evaluated only when TradingView or another data source sends a webhook payload for the matching ticker and timeframe.
-
-MVP v1 uses only 4-hour SMA values:
-
-- Symbol: `BTCUSDT.P` on Binance, accepted as `BTCUSDT.P` or `BINANCE:BTCUSDT.P`
-- `SMA7`
-- `SMA21`
-- `SMA60`
-
-Excluded from the current version:
-
-- RSI
-- MACD
-- volume
-- moving average gap
-- Bollinger Bands
-
-State:
-
-| State | Condition |
+| Column | Purpose |
 | --- | --- |
-| STRONG_BULL | `SMA7 > SMA21 > SMA60` |
-| STRONG_BEAR | `SMA7 < SMA21 < SMA60` |
-| WEAK_BULL | `SMA7 > SMA60`, but not `STRONG_BULL` |
-| WEAK_BEAR | `SMA7 < SMA60`, but not `STRONG_BEAR` |
-| NEUTRAL | none of the above |
+| `id` | Rule id |
+| `name` | Human rule name |
+| `symbol` | Ticker such as `SPX`, `QQQ`, `AAPL` |
+| `timeframe` | `1w`, `1d`, `4h` |
+| `direction` | `LONG`, `SHORT`, `WATCH` |
+| `ma_type` | Currently `sma` |
+| `ma_period` | Moving average period, e.g. `60` |
+| `tolerance_pct` | Touch tolerance as decimal, e.g. `0.005` |
+| `thesis` | Why this condition matters |
+| `judgment` | How to interpret the alert |
+| `enabled` | Rule switch |
+| `cooldown_hours` | Duplicate prevention window |
 
-Events:
+### `signals`
 
-| Event | Condition | Signal | Situation |
-| --- | --- | --- | --- |
-| 정배열 완성 | previous state is not `STRONG_BULL`, current state is `STRONG_BULL` | 상승 추세 전환 | 정배열 완성 |
-| 역배열 완성 | previous state is not `STRONG_BEAR`, current state is `STRONG_BEAR` | 하락 추세 전환 | 역배열 완성 |
-| 정배열 + 21선 터치 | current state is `STRONG_BULL`, price is near SMA21 | 매수 관심 | 21선 눌림 |
-| 정배열 + 60선 터치 | current state is `STRONG_BULL`, price is near SMA60 | 강한 매수 관심 | 60선 눌림 |
-| 역배열 + 21선 터치 | current state is `STRONG_BEAR`, price is near SMA21 | 매도 관심 | 21선 저항 |
-| 역배열 + 60선 터치 | current state is `STRONG_BEAR`, price is near SMA60 | 강한 매도 관심 | 60선 저항 |
+Stores every alert that actually fired.
 
-Touch rule:
-
-```text
-abs(price - SMA) / SMA <= touch_tolerance_pct
-```
-
-Default tolerance is `0.001`, or 0.1%. TradingView can override it in webhook `data.touch_tolerance_pct`.
-
-Duplicate prevention:
-
-- Same symbol + timeframe + strategy + event + state is sent at most once per 24 hours.
-- If state changes and later returns, it is treated as a new event.
-- State is stored separately in `strategy_states`; events are stored in `signals`.
-
-## 4. Database Design
-
-MVP table: `signals`
-
-| Column | Type | Purpose |
-| --- | --- | --- |
-| id | integer PK | Signal ID |
-| symbol | string | Symbol such as `NASDAQ:AAPL` |
-| timeframe | string | Timeframe such as `15m` |
-| strategy_name | string | Strategy plugin name |
-| signal_type | string | Human signal such as `매수 관심` |
-| market_state | string/null | State such as `STRONG_BULL` |
-| situation | string/null | Context such as `21선 눌림` |
-| dedupe_key | string/null | Stable event key for duplicate prevention |
-| message | text | Human-readable alert text |
-| payload_json | text/json | Original TradingView payload plus strategy metadata |
-| occurred_at | datetime | Market event time |
-| created_at | datetime | Server persistence time |
-
-MVP table: `strategy_states`
-
-| Column | Type | Purpose |
-| --- | --- | --- |
-| id | integer PK | State row ID |
-| symbol | string | Symbol |
-| timeframe | string | Timeframe |
-| strategy_name | string | Strategy plugin name |
-| current_state | string | Latest known state |
-| payload_json | text/json | Latest payload snapshot |
-| updated_at | datetime | Market event time |
-| created_at | datetime | First persistence time |
-
-Unique key:
-
-```text
-symbol + timeframe + strategy_name
-```
-
-Indexes are defined on symbol, timeframe, strategy, signal type, market state, dedupe key, and event time.
-
-Future tables:
-
-- `strategies`: enabled/disabled strategy registry and per-strategy settings.
-- `instruments`: managed symbols and exchange metadata.
-- `notification_events`: delivery status, retry count, provider response.
-- `users`: dashboard login and notification targets.
-
-## 5. API Design
-
-Base URL: `/api/v1`
-
-### `POST /webhooks/tradingview/{secret}`
-
-Receives TradingView alerts.
-
-Example body:
-
-```json
-{
-  "symbol": "BINANCE:BTCUSDT.P",
-  "timeframe": "240",
-  "event": "tradingview_alert",
-  "message": "SMA 4H update",
-  "price": 101.0,
-  "occurred_at": "2026-06-08T05:00:00Z",
-  "data": {
-    "sma7": 105.0,
-    "sma21": 101.1,
-    "sma60": 95.0,
-    "touch_tolerance_pct": 0.001
-  }
-}
-```
-
-Response:
-
-```json
-{
-  "signals_created": 1,
-  "duplicates_skipped": 0
-}
-```
-
-### `GET /strategies`
-
-Returns auto-discovered strategy plugins.
-
-### `GET /signals`
-
-Query signal history.
-
-Query parameters:
-
-- `symbol`
-- `timeframe`
-- `strategy_name`
-- `direction`
-- `signal_type`
-- `start`
-- `end`
-- `limit`, default `100`, max `500`
-
-### Dashboard and research APIs
-
-The built-in dashboard is served at `/dashboard` and uses these APIs:
-
-| Endpoint | Purpose |
+| Column | Purpose |
 | --- | --- |
-| `GET /dashboard` | Summary counts, horizon performance, win rates, chart series |
-| `GET /signals/{signal_id}` | Signal detail with outcome map |
-| `GET /performance` | Symbol-level performance comparison |
-| `GET /strategy-analysis` | Signal-type performance comparison |
-| `GET /research` | Top winner and loser signals |
-| `GET /settings` | Tracked symbols and masked notification/tracking settings |
-| `GET /conditions` | Condition registry for Backtest Lab |
-| `POST /backtests/run` | Run and store a backtest |
-| `GET /backtests` | List stored backtest runs |
+| `symbol` | Signal ticker |
+| `timeframe` | Signal timeframe |
+| `strategy_name` | Currently `rare_edge_rules` |
+| `signal_type` | Human alert type |
+| `direction` | `LONG`, `SHORT`, or null |
+| `situation` | Short situation label |
+| `dedupe_key` | Stable key for cooldown |
+| `entry_price` | Price at signal |
+| `current_price` | Same as latest price for radar alerts |
+| `message` | Human-readable reason text |
+| `payload_json` | Raw source data and rule metadata |
+| `occurred_at` | Market data timestamp |
 
-The frontend is static HTML/CSS/JavaScript in `app/static/dashboard` and uses Chart.js from a CDN. This keeps AWS deployment identical to the API deployment.
+Old tables such as `backtest_runs`, `signal_outcomes`, and `strategy_states` may exist in old SQLite files, but they are no longer part of the active product flow.
 
-### Backtest Lab MVP
+## API
 
-Backtest Lab is the first step toward a strategy research platform. It uses a condition registry instead of hard-coded UI options. The frontend reads condition metadata from `/api/v1/conditions`, sends selected condition IDs to `/api/v1/backtests/run`, and renders metrics plus trades.
-
-MVP execution model:
-
-- Fetch Binance futures candles.
-- Calculate SMA, RSI, ATR, and volume averages.
-- Enter when all selected conditions are true.
-- Use ATR multiplier for stop distance.
-- Use risk-reward ratio for target distance.
-- Exit on TP, SL, or max holding time.
-- If TP and SL are both touched in the same candle, count SL first.
-
-## 6. TradingView Integration
-
-TradingView webhook is the cleanest MVP integration.
-
-1. Create an alert in TradingView.
-2. Enable webhook URL.
-3. Set URL:
+Base URL:
 
 ```text
-https://your-domain.com/api/v1/webhooks/tradingview/YOUR_SECRET
+/api/v1
 ```
 
-4. Use JSON message body:
+Active endpoints:
 
-```json
-{
-  "symbol": "{{ticker}}",
-  "timeframe": "{{interval}}",
-  "event": "tradingview_alert",
-  "message": "SMA 4H update",
-  "price": {{close}},
-  "occurred_at": "{{time}}",
-  "data": {
-    "sma7": {{plot("SMA7")}},
-    "sma21": {{plot("SMA21")}},
-    "sma60": {{plot("SMA60")}},
-    "touch_tolerance_pct": 0.001
-  }
-}
-```
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/edge-rules` | List saved rules |
+| POST | `/edge-rules` | Create a rule |
+| POST | `/edge-rules/evaluate` | Run evaluation now |
+| DELETE | `/edge-rules/{rule_id}` | Delete a rule |
+| POST | `/webhooks/tradingview/{secret}` | Optional TradingView payload ingestion |
+| GET | `/dashboard` | Dashboard summary |
+| GET | `/signals` | Signal history |
+| GET | `/signals/{signal_id}` | Signal detail |
+| GET | `/settings` | Runtime settings summary |
 
-Notes:
+Removed from active API:
 
-- TradingView should send 4-hour data for MVP v1.
-- Pine Script plot names must match `SMA7`, `SMA21`, and `SMA60`.
-- This backend classifies state, detects events, records signals, and sends notifications.
-- For local testing from TradingView, use a tunnel such as ngrok or Cloudflare Tunnel.
+- Strategy plugin list
+- Backtest runs
+- Backtest strategy presets
+- Exit optimization
+- Outcome tracking
+- Signal stats Discord report
 
-## 7. Notification Integration
+## Rule Evaluation
 
-### Discord Webhook
-
-Discord is the recommended first alert channel for MVP v1 because it is free and only requires a webhook URL.
-
-Setup:
-
-1. Create a Discord server.
-2. Create a channel such as `trading-alerts`.
-3. Open channel settings.
-4. Open `Integrations` -> `Webhooks`.
-5. Create a webhook and copy its URL.
-6. Put the URL in `.env`.
-
-Environment variables:
+Current MVP condition:
 
 ```text
-DISCORD_WEBHOOK_URL=
-DISCORD_USERNAME=AlphaForge
-ENABLE_DISCORD_NOTIFICATIONS=true
+abs(price - SMA) / SMA <= tolerance_pct
 ```
-
-The Discord payload uses an embed with:
-
-- symbol and signal type
-- timeframe
-- market state
-- situation
-- strategy
-- occurred time
-- reason message
-
-### KakaoTalk Channel
-
-MVP does not use KakaoTalk "Send message to me".
-
-The target design is:
-
-```text
-Trading Signal -> FastAPI -> Kakao Channel message provider -> Dedicated KakaoTalk Channel -> You
-```
-
-Kakao Developers' message API is intended for user-to-user flows inside the same service. For a service or channel to directly send informational alerts to a user, use Kakao Business Message products such as AlimTalk/FriendTalk or a provider that supports those products.
-
-Setup:
-
-1. Create a dedicated KakaoTalk Channel, such as `Trading Alert Bot`.
-2. Add the channel as a friend from your personal KakaoTalk account.
-3. Connect Kakao Business Message, AlimTalk, FriendTalk, or a compatible provider.
-4. Create a message template for trading alerts if the provider requires template approval.
-5. Put provider credentials in `.env`.
-6. Set `ENABLE_KAKAO_NOTIFICATIONS=true`.
-
-Environment variables:
-
-```text
-KAKAO_CHANNEL_PROVIDER_URL=
-KAKAO_CHANNEL_API_KEY=
-KAKAO_CHANNEL_SENDER_KEY=
-KAKAO_CHANNEL_ID=
-KAKAO_CHANNEL_RECIPIENT_PHONE=
-KAKAO_CHANNEL_TEMPLATE_CODE=TRADING_SIGNAL
-```
-
-Current implementation sends:
-
-- symbol
-- timeframe
-- signal type
-- market state
-- situation
-- reasons
-
-Message format:
-
-```text
-BTCUSDT.P
-
-신호:
-매수 관심
-
-상태:
-STRONG_BULL
-
-상황:
-21선 눌림
-
-이유:
-* 4시간봉 SMA7 > SMA21 > SMA60 유지
-* 가격이 SMA21 재접근
-* 상승 추세 유지 중
-```
-
-Provider payload:
-
-The current implementation posts a normalized JSON payload to `KAKAO_CHANNEL_PROVIDER_URL`. Since each business message provider has a slightly different REST format, only `app/services/kakao.py` should need provider-specific mapping after the provider is selected.
-
-Production improvement:
-
-- Persist provider request/response.
-- Persist notification delivery result.
-- Add retry policy for temporary provider API failures.
-- Add multiple recipients or escalation channels.
-
-## 8. Docker Configuration
-
-`Dockerfile` builds the FastAPI app.
-
-`docker-compose.yml` runs:
-
-- API container on port `8000`
-- local `./data` volume for SQLite persistence
-- local `./strategies` volume so strategy edits are picked up after server restart
-
-## 9. Environment And GitHub
-
-`.env` is never committed. `.env.example` is committed.
-
-Committed project files:
-
-- `app/`
-- `strategies/`
-- `docs/`
-- `README.md`
-- `Dockerfile`
-- `docker-compose.yml`
-- `.env.example`
-- `.gitignore`
-- `pyproject.toml`
-
-Ignored files:
-
-- `.env`
-- `.venv/`
-- `data/`
-- SQLite database files
-- Python cache/build artifacts
-
-GitHub repository:
-
-```text
-https://github.com/mkwdbet/trading-assistant.git
-```
-
-## 10. Deployment
-
-VPS MVP:
-
-1. Install Docker and Docker Compose.
-2. Clone GitHub repository: `https://github.com/mkwdbet/trading-assistant.git`.
-3. Copy `.env.production.example` to `.env`.
-4. Set webhook secret, public domain, ACME email, and Discord webhook URL.
-5. Run `bash scripts/deploy_prod.sh`.
-6. Caddy terminates HTTPS and reverse proxies to FastAPI.
-7. Register HTTPS webhook URL in TradingView.
-
-Detailed AWS deployment: `docs/aws_deployment.md`.
-
-AWS option:
-
-- Lightsail or EC2 for simple VPS-like operation.
-- RDS PostgreSQL when signal history becomes important.
-- ECS/Fargate when container orchestration is needed.
-- Secrets Manager or SSM Parameter Store for environment variables.
-
-## 11. Strategy Plugin Design
-
-Add a new file in `strategies/`.
-
-Rules:
-
-- Define a class that inherits `BaseStrategy`.
-- Set a unique `name`.
-- Implement `evaluate(payload, context)`.
-- Return `[]` when no signal occurs.
-- Return one or more `StrategySignal` objects when conditions match.
-- Restart the server to load the new file.
 
 Example:
 
-```python
-from app.schemas import TradingViewWebhookPayload
-from app.strategies.base import BaseStrategy, StrategyContext, StrategySignal
-
-
-class MyStrategy(BaseStrategy):
-    name = "my_strategy"
-    description = "My custom condition"
-    symbols = {"BINANCE:BTCUSDT"}
-    timeframes = {"240"}
-
-    def evaluate(
-        self,
-        payload: TradingViewWebhookPayload,
-        context: StrategyContext,
-    ) -> list[StrategySignal]:
-        if payload.data.get("my_condition") is not True:
-            return []
-
-        return [
-            StrategySignal(
-                strategy_name=self.name,
-                signal_type="my_signal",
-                dedupe_key="my_signal",
-                message="My condition occurred.",
-                occurred_at=payload.occurred_at,
-                metadata={"price": payload.price},
-            )
-        ]
+```text
+SPX weekly SMA60 touch
+price: 5200
+SMA60: 5178
+tolerance_pct: 0.005
+distance: 0.42%
+=> match
 ```
 
-## 12. Roadmap
+Duplicate prevention:
 
-Phase 1:
+```text
+same symbol + timeframe + rule id + condition type
+=> suppressed during cooldown_hours
+```
 
-- TradingView webhook receiver
-- Strategy plugin loader
-- SQLite signal storage
-- KakaoTalk Channel provider notification
-- Docker local execution
+## Market Data
 
-Phase 2:
+Scheduled evaluation uses Yahoo Finance chart data.
 
-- PostgreSQL option
-- Kakao Channel provider response logging
-- Notification delivery audit table
-- Strategy enable/disable settings
-- More detailed filtering for signal history
+Common aliases:
 
-Phase 3:
+| Input | Provider Symbol |
+| --- | --- |
+| `SPX` | `^GSPC` |
+| `NDX` | `^NDX` |
+| `DJI` | `^DJI` |
+| `BTCUSDT.P` | `BTC-USD` |
+| `ETHUSDT.P` | `ETH-USD` |
 
-- Expand web dashboard with auth and editable settings
-- User login
-- Strategy config UI
-- Backtesting import/export
-- Scheduled market data polling where webhook is insufficient
+If a ticker does not work through Yahoo, add an alias or use TradingView webhook payloads for that asset.
 
-Phase 4:
+## Notification
 
-- Queue worker for notification retries
-- Multi-user notification targets
-- AWS/VPS production hardening
-- Observability, logs, metrics, alert health checks
+Primary channel:
+
+```text
+Discord Webhook
+```
+
+Kakao channel integration remains optional and provider-dependent, but it is not the default path.
+
+## Deployment
+
+Local:
+
+```powershell
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Docker:
+
+```powershell
+docker compose up --build
+```
+
+AWS/VPS:
+
+```bash
+git clone https://github.com/mkwdbet/trading-assistant.git
+cd trading-assistant
+cp .env.production.example .env
+nano .env
+bash scripts/deploy_prod.sh
+```
+
+For 24-hour alerts, keep the server process alive on AWS/VPS with:
+
+```env
+ENABLE_EDGE_RULE_EVALUATOR=true
+EDGE_RULE_EVALUATOR_INTERVAL_SECONDS=3600
+ENABLE_DISCORD_NOTIFICATIONS=true
+```
+
+## Future Expansion
+
+Preferred workflow:
+
+1. Describe a new rare condition in natural language.
+2. Codex turns it into a specific rule or code strategy.
+3. Add focused tests.
+4. Run locally.
+5. Push to GitHub.
+6. Deploy to AWS/VPS.
+
+Likely future signals:
+
+- `SPX` weekly SMA60/SMA100/SMA200 retest
+- `QQQ` daily or weekly SMA200 retest
+- Long-term index drawdown into moving average support
+- VIX risk regime filter
+- Dollar index risk filter
+- Cross-asset confirmation for equity exposure

@@ -9,25 +9,18 @@ from app.api.routes import router
 from app.core.config import settings
 from app.db.session import init_db
 from app.services.edge_rule_evaluator import run_edge_rule_evaluator
-from app.services.outcome_tracker import run_outcome_tracker
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="AlphaForge",
-        version="0.1.0",
-        description="Build, backtest, and validate crypto trading strategies.",
+        title="Long-Term Edge Radar",
+        version="0.2.0",
+        description="Personal long-term investing radar for rare technical edge alerts.",
     )
 
     @app.on_event("startup")
     def on_startup() -> None:
         init_db()
-        if settings.enable_outcome_tracking:
-            asyncio.create_task(
-                run_outcome_tracker(
-                    interval_seconds=settings.outcome_tracker_interval_seconds,
-                )
-            )
         if settings.enable_edge_rule_evaluator:
             asyncio.create_task(
                 run_edge_rule_evaluator(
@@ -52,4 +45,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

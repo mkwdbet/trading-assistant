@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: str = "local"
     app_host: str = "0.0.0.0"
@@ -22,10 +22,8 @@ class Settings(BaseSettings):
     enable_kakao_notifications: bool = False
 
     discord_webhook_url: str = ""
-    discord_username: str = "AlphaForge"
+    discord_username: str = "Long-Term Edge Radar"
     enable_discord_notifications: bool = False
-    enable_outcome_tracking: bool = True
-    outcome_tracker_interval_seconds: int = 300
     enable_edge_rule_evaluator: bool = True
     edge_rule_evaluator_interval_seconds: int = 3600
 

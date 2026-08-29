@@ -4,45 +4,48 @@ from app.schemas import SignalCreate
 from app.services.discord_formatter import format_discord_signal_embed
 
 
-def test_signal_embed_uses_detailed_analysis_layout() -> None:
+def test_signal_embed_uses_long_term_edge_layout() -> None:
     signal = SignalCreate(
         id=123,
-        symbol="BINANCE:BTCUSDT.P",
-        timeframe="240",
-        strategy_name="sma_strategy",
-        signal_type="매수 관심",
+        symbol="SPX",
+        timeframe="1w",
+        strategy_name="rare_edge_rules",
+        signal_type="희귀 매수 우위",
         direction="LONG",
-        analysis_signal_type="bullish_21ma_touch",
-        market_state="STRONG_BULL",
-        situation="21선 눌림",
-        dedupe_key="strong_bull_sma21_touch",
-        entry_price=105432.1,
-        current_price=105432.1,
-        sma7=104813.25,
-        sma21=104256.78,
-        sma60=100987.55,
+        analysis_signal_type="rare_sma60_touch",
+        market_state="RARE_EDGE",
+        situation="SMA60 지지",
+        dedupe_key="edge_rule_1_sma60_touch",
+        entry_price=5200.0,
+        current_price=5200.0,
         message="\n".join(
             [
-                "* 4시간봉 SMA7 > SMA21 > SMA60 유지",
-                "* 가격이 SMA21 재접근",
-                "* 상승 추세 유지 중",
+                "* 주봉 SPX 가격이 SMA60에 재접근",
+                "* 현재가 5,200.00, 기준선 5,180.00, 이격 0.39%",
             ]
         ),
-        occurred_at=datetime(2026, 6, 9, 3, 0, 45, tzinfo=timezone.utc),
-        payload={"reason": ["4시간봉 SMA7 > SMA21 > SMA60 유지"]},
+        occurred_at=datetime(2026, 8, 30, 3, 0, tzinfo=timezone.utc),
+        payload={
+            "reason": ["주봉 SPX 가격이 SMA60에 재접근"],
+            "edge_rule": {
+                "thesis": "주봉 기준 S&P 500이 SMA60에 닿는 드문 장기 매수 관심 구간",
+                "judgment": "즉시 진입이 아니라 차트 확인용 알림입니다.",
+            },
+        },
     )
 
     embed = format_discord_signal_embed(signal)
 
-    assert embed["title"] == "🟢 BINANCE:BTCUSDT.P | 매수 관심"
-    assert "📈 **상황**" in embed["description"]
-    assert "SMA21이 가격을 아래에서 지지하고 재접근" in embed["description"]
-    assert "🎯 **판단**" in embed["description"]
-    assert "🔷 **이유**" in embed["description"]
+    assert embed["title"] == "🟢 SPX | 희귀 매수 우위"
+    assert "**상황**" in embed["description"]
+    assert "S&P 500이 SMA60에 닿는 드문 장기 매수 관심 구간" in embed["description"]
+    assert "**판단**" in embed["description"]
+    assert "**이유**" in embed["description"]
     fields = {field["name"]: field["value"] for field in embed["fields"]}
-    assert fields["현재가 (Last Price)"] == "105,432.10 USDT"
-    assert fields["SMA21 대비"] == "+1.13%"
-    assert fields["Signal ID"] == "123"
-    assert fields["Signal Time (KST)"] == "2026-06-09 12:00:45"
-    assert "12시간 후 / 24시간 후 / 48시간 후 / 72시간 후" in fields["⏳ 성과 추적 예정"]
-    assert "투자에 대한 최종 책임" in embed["footer"]["text"]
+    assert fields["Timeframe"] == "1W"
+    assert fields["State"] == "RARE_EDGE"
+    assert fields["Situation"] == "SMA60 지지"
+    assert fields["Strategy"] == "rare_edge_rules"
+    assert fields["Price"] == "5,200.00"
+    assert fields["Occurred At"] == "2026-08-30 12:00 KST"
+    assert embed["footer"]["text"] == "Long-Term Edge Radar"

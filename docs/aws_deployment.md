@@ -79,6 +79,8 @@ ACME_EMAIL=you@example.com
 TRADINGVIEW_WEBHOOK_SECRET=replace-with-long-random-secret
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ENABLE_DISCORD_NOTIFICATIONS=true
+ENABLE_EDGE_RULE_EVALUATOR=true
+EDGE_RULE_EVALUATOR_INTERVAL_SECONDS=3600
 ```
 
 Generate a secret:
@@ -124,7 +126,27 @@ When using the current EC2 IP without a domain:
 http://3.34.230.202/dashboard
 ```
 
-## 6. Test Webhook
+## 6. Test Manual Evaluation
+
+Saved rules can be evaluated without TradingView:
+
+```bash
+curl -X POST "https://alerts.your-domain.com/api/v1/edge-rules/evaluate"
+```
+
+Expected response:
+
+```json
+{
+  "rules_evaluated": 1,
+  "rules_matched": 0,
+  "signals_created": 0,
+  "duplicates_skipped": 0,
+  "rules_failed": 0
+}
+```
+
+## 7. Optional TradingView Webhook Test
 
 ```bash
 SECRET="your-secret"
@@ -133,31 +155,27 @@ DOMAIN="alerts.your-domain.com"
 curl -X POST "https://${DOMAIN}/api/v1/webhooks/tradingview/${SECRET}" \
   -H "Content-Type: application/json" \
   -d '{
-    "symbol": "BINANCE:BTCUSDT.P",
-    "timeframe": "240",
+    "symbol": "TVC:SPX",
+    "timeframe": "1W",
     "event": "manual_test",
-    "message": "AWS production test",
-    "price": 101.0,
+    "message": "SPX weekly SMA60 test",
+    "price": 5200.0,
     "data": {
-      "sma7": 90.0,
-      "sma21": 100.0,
-      "sma60": 110.0,
-      "touch_tolerance_pct": 0.001
+      "sma60": 5185.0
     }
   }'
 ```
 
-## 7. Update TradingView
+## 8. Optional TradingView Setup
 
 Webhook URL:
 
 ```text
 https://alerts.your-domain.com/api/v1/webhooks/tradingview/YOUR_SECRET
 ```
+TradingView is optional. The default production path is scheduled server-side evaluation of saved Edge Rules.
 
-Keep the existing Pine script alert. Only replace the webhook URL and secret.
-
-## 8. Operations
+## 9. Operations
 
 View logs:
 

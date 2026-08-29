@@ -3,440 +3,131 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AlphaForge Strategy Research Lab</title>
-    <meta
-      name="description"
-      content="Build, backtest, and validate crypto trading strategies."
-    />
+    <title>Long-Term Edge Radar</title>
     <link rel="stylesheet" href="/static/dashboard/styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   </head>
   <body>
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">AF</div>
-        <div>
-          <strong>AlphaForge</strong>
-          <span>Strategy Research Lab</span>
-        </div>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Personal investing radar</p>
+        <h1>Long-Term Edge Radar</h1>
       </div>
-      <nav class="nav">
-        <button class="active" data-view="dashboard">Dashboard</button>
-        <button data-view="edge-alerts">Edge Alerts</button>
-        <button data-view="signals">Signals</button>
-        <button data-view="performance">Performance</button>
-        <button data-view="strategy">Strategy Analysis</button>
-        <button data-view="backtest">Backtest Lab</button>
-        <button data-view="research">Research</button>
-        <button data-view="settings">Settings</button>
-      </nav>
-    </aside>
+      <button id="evaluateNowButton" type="button">Evaluate Now</button>
+    </header>
 
-    <main class="shell">
-      <header class="topbar">
+    <main>
+      <section class="metrics" aria-label="summary">
+        <article>
+          <span>Active Rules</span>
+          <strong id="activeRules">-</strong>
+        </article>
+        <article>
+          <span>Total Signals</span>
+          <strong id="totalSignals">-</strong>
+        </article>
+        <article>
+          <span>Last 30 Days</span>
+          <strong id="signals30d">-</strong>
+        </article>
+        <article>
+          <span>Evaluator</span>
+          <strong id="evaluatorStatus">-</strong>
+        </article>
+      </section>
+
+      <section class="panel split">
         <div>
-          <p class="eyebrow">Research. Validate. Deploy.</p>
-          <h1>AlphaForge Research Lab</h1>
-          <p class="hero-copy">Build, backtest, and validate crypto trading strategies.</p>
-        </div>
-        <div class="hero-actions">
-          <div class="research-pill">
-            <span>Mode</span>
-            <strong>Strategy Research</strong>
+          <div class="section-title">
+            <p class="eyebrow">Rare edge rule</p>
+            <h2>감시 조건 추가</h2>
           </div>
-          <div class="status-pill"><span></span>AWS Live</div>
-        </div>
-      </header>
-
-      <section class="strategy-strip">
-        <div>
-          <span>Strategy</span>
-          <strong id="selectedStrategyLabel">All Strategies</strong>
-        </div>
-        <div class="strategy-buttons" id="strategyButtons">
-          <button class="active" data-strategy="">All Strategies</button>
-        </div>
-      </section>
-
-      <section id="dashboard" class="view active">
-        <div class="metric-grid" id="summaryCards"></div>
-        <div class="panel-grid">
-          <section class="panel">
-            <div class="panel-head">
-              <h2>평균 수익률</h2>
-              <span>12h / 24h / 48h / 72h</span>
-            </div>
-            <div id="horizonCards" class="horizon-grid"></div>
-          </section>
-          <section class="panel">
-            <div class="panel-head">
-              <h2>일별 신호 수</h2>
-              <span>최근 기록 기준</span>
-            </div>
-            <canvas id="dailySignalsChart"></canvas>
-          </section>
-        </div>
-        <div class="panel-grid">
-          <section class="panel">
-            <div class="panel-head">
-              <h2>누적 신호</h2>
-              <span>데이터 축적 속도</span>
-            </div>
-            <canvas id="cumulativeSignalsChart"></canvas>
-          </section>
-          <section class="panel">
-            <div class="panel-head">
-              <h2>종목별 24h 평균</h2>
-              <span>성과 비교</span>
-            </div>
-            <canvas id="symbolReturnsChart"></canvas>
-          </section>
-        </div>
-      </section>
-
-      <section id="edge-alerts" class="view">
-        <div class="panel-grid edge-intro-grid">
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Rare Edge Alerts</h2>
-              <span>장기투자용 희귀 기술적 우위만 알림</span>
-            </div>
-            <p class="edge-copy">
-              단타성 빈번한 신호 대신, 주봉/일봉 기준의 드문 위치만 Discord로 보냅니다.
-              TradingView에서 확인 가능한 티커를 입력해 여러 종목의 장기 우위 조건을 관리합니다.
-            </p>
-          </section>
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Example</h2>
-              <span>S&P 500 weekly SMA60</span>
-            </div>
-            <div class="edge-rule-note">
-              <strong>SPX · 1W · SMA60 touch</strong>
-              <span>주봉 60선 재접근처럼 자주 오지 않는 구간만 알림.</span>
-            </div>
-          </section>
-        </div>
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Add Edge Rule</h2>
-            <span>티커 입력 후 희귀 우위 조건 저장</span>
-          </div>
-          <form class="edge-form" id="edgeRuleForm">
-            <input name="name" placeholder="Rule name" value="S&P 500 weekly SMA60 touch" required />
-            <input name="symbol" placeholder="TradingView ticker, e.g. SPX, SPY, QQQ, AAPL, BTCUSDT.P" value="SPX" required />
-            <select name="edge_timeframe">
-              <option value="1w" selected>1W</option>
-              <option value="1d">1D</option>
-              <option value="4h">4H</option>
-            </select>
-            <select name="direction">
-              <option value="LONG" selected>LONG</option>
-              <option value="SHORT">SHORT</option>
-              <option value="WATCH">WATCH</option>
-            </select>
-            <label>MA Period<input name="ma_period" type="number" min="1" step="1" value="60" /></label>
-            <label>Tolerance %<input name="tolerance_pct" type="number" min="0" step="0.1" value="0.5" /></label>
-            <label>Cooldown Hours<input name="cooldown_hours" type="number" min="1" step="1" value="168" /></label>
-            <textarea name="thesis" placeholder="Situation thesis">주봉 기준 S&P 500이 SMA60에 닿는 드문 장기 매수 관심 구간</textarea>
-            <textarea name="judgment" placeholder="Judgment">장기투자 관점에서 희귀한 기술적 우위 후보입니다. 즉시 진입이 아니라 차트 확인용 알림입니다.</textarea>
-            <button type="submit">Save Edge Rule</button>
+          <form id="edgeRuleForm" class="rule-form">
+            <label>
+              <span>Rule Name</span>
+              <input name="name" value="S&P 500 weekly SMA60 touch" required />
+            </label>
+            <label>
+              <span>Symbol</span>
+              <input name="symbol" value="SPX" placeholder="SPX, SPY, QQQ, AAPL" required />
+            </label>
+            <label>
+              <span>Timeframe</span>
+              <select name="timeframe">
+                <option value="1w">1W</option>
+                <option value="1d">1D</option>
+                <option value="4h">4H</option>
+              </select>
+            </label>
+            <label>
+              <span>Direction</span>
+              <select name="direction">
+                <option value="LONG">LONG</option>
+                <option value="WATCH">WATCH</option>
+                <option value="SHORT">SHORT</option>
+              </select>
+            </label>
+            <label>
+              <span>SMA Period</span>
+              <input name="ma_period" type="number" min="1" value="60" required />
+            </label>
+            <label>
+              <span>Tolerance %</span>
+              <input name="tolerance_pct" type="number" min="0" step="0.1" value="0.5" required />
+            </label>
+            <label>
+              <span>Cooldown Hours</span>
+              <input name="cooldown_hours" type="number" min="1" value="168" required />
+            </label>
+            <label class="wide">
+              <span>Thesis</span>
+              <textarea name="thesis" rows="3">주봉 기준 S&P 500이 SMA60에 닿는 드문 장기 매수 관심 구간</textarea>
+            </label>
+            <label class="wide">
+              <span>Judgment</span>
+              <textarea name="judgment" rows="3">장기투자 관점에서 희귀한 기술적 우위 후보입니다. 즉시 진입이 아니라 차트 확인용 알림입니다.</textarea>
+            </label>
+            <button class="primary wide" type="submit">Save Rule</button>
           </form>
-        </section>
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Saved Edge Rules</h2>
-            <span>활성 희귀 우위 알림 규칙</span>
-          </div>
-          <div class="edge-actions">
-            <button type="button" id="evaluateEdgeRulesButton">Evaluate Now</button>
-            <span id="edgeEvaluationResult">서버가 주기적으로 직접 가격 데이터를 조회합니다.</span>
-          </div>
-          <div class="table-wrap"><table id="edgeRulesTable"></table></div>
-        </section>
+          <p class="status" id="saveStatus"></p>
+        </div>
+
+        <aside class="note">
+          <h2>운영 방식</h2>
+          <p>
+            이 프로젝트는 단타 매매 알림이 아니라, 자주 오지 않는 장기 기술적 우위만 감시합니다.
+            현재 웹 규칙은 SMA 근접 조건에 집중하고, 더 복잡한 아이디어는 Codex와 함께 코드 전략으로 추가합니다.
+          </p>
+          <ul>
+            <li>서버가 켜져 있으면 1시간마다 자동 평가</li>
+            <li>조건 충족 시 Discord 알림 전송</li>
+            <li>동일 규칙은 cooldown 동안 중복 방지</li>
+          </ul>
+        </aside>
       </section>
 
-      <section id="signals" class="view">
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Signals</h2>
-            <span>클릭하면 상세를 확인합니다</span>
+      <section class="panel">
+        <div class="section-title row">
+          <div>
+            <p class="eyebrow">Watchlist</p>
+            <h2>저장된 장기 조건</h2>
           </div>
-          <form class="filters" id="signalFilters">
-            <input name="symbol" placeholder="Symbol" />
-            <select name="direction">
-              <option value="">LONG / SHORT</option>
-              <option value="LONG">LONG</option>
-              <option value="SHORT">SHORT</option>
-            </select>
-            <select name="signal_type">
-              <option value="">Signal Type</option>
-              <option value="bullish_21ma_touch">bullish_21ma_touch</option>
-              <option value="bullish_60ma_touch">bullish_60ma_touch</option>
-              <option value="bearish_21ma_touch">bearish_21ma_touch</option>
-              <option value="bearish_60ma_touch">bearish_60ma_touch</option>
-            </select>
-            <input name="start" type="datetime-local" />
-            <input name="end" type="datetime-local" />
-            <button type="submit">Filter</button>
-          </form>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Signal ID</th>
-                  <th>Symbol</th>
-                  <th>Direction</th>
-                  <th>Signal Type</th>
-                  <th>Signal Time</th>
-                  <th>Entry</th>
-                  <th>24h</th>
-                  <th>72h</th>
-                </tr>
-              </thead>
-              <tbody id="signalsTable"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <section id="performance" class="view">
-        <section class="panel">
-          <div class="panel-head">
-            <h2>종목별 성과</h2>
-            <span>24h 기준 정렬</span>
-          </div>
-          <div class="table-wrap"><table id="performanceTable"></table></div>
-        </section>
-      </section>
-
-      <section id="strategy" class="view">
-        <section class="panel">
-          <div class="panel-head">
-            <h2>신호 유형별 성과</h2>
-            <span id="bestSignalType">Best signal loading...</span>
-          </div>
-          <canvas id="strategyReturnsChart"></canvas>
-          <div class="table-wrap"><table id="strategyTable"></table></div>
-        </section>
-      </section>
-
-      <section id="backtest" class="view">
-        <div class="backtest-workspace">
-        <section class="panel backtest-control-panel">
-          <div class="panel-head">
-            <h2>Backtest Lab</h2>
-            <span>조건 조합 연구</span>
-          </div>
-          <div class="preset-bar">
-            <select id="backtestStrategySelect">
-              <option value="">Saved Strategy Presets</option>
-            </select>
-            <button type="button" id="saveBacktestStrategyButton">Save Preset</button>
-            <button type="button" id="deleteBacktestStrategyButton">Delete Preset</button>
-          </div>
-          <div class="backtest-mode-toggle" id="backtestModeToggle">
-            <button type="button" class="active" data-backtest-mode="single">Single Backtest</button>
-            <button type="button" data-backtest-mode="optimizer">Exit Optimizer</button>
-          </div>
-          <form class="backtest-form primary-controls" id="backtestForm">
-            <input name="name" placeholder="Strategy name" />
-            <select name="symbol">
-              <option value="BTCUSDT.P">BTCUSDT.P</option>
-              <option value="ETHUSDT.P">ETHUSDT.P</option>
-              <option value="SOLUSDT.P">SOLUSDT.P</option>
-              <option value="XRPUSDT.P">XRPUSDT.P</option>
-              <option value="DOGEUSDT.P">DOGEUSDT.P</option>
-              <option value="PEPEUSDT.P">PEPEUSDT.P</option>
-            </select>
-            <select name="direction">
-              <option value="BOTH">BOTH</option>
-              <option value="LONG">LONG</option>
-              <option value="SHORT">SHORT</option>
-            </select>
-            <label>Start Date<input name="start_date" type="date" required /></label>
-            <label>End Date<input name="end_date" type="date" required /></label>
-            <span class="section-label">Risk Settings</span>
-            <label data-single-backtest>ATR Multiplier<input name="atr_multiplier" type="number" min="0.1" max="3" step="0.1" value="1.5" /></label>
-            <label data-single-backtest>R:R<input name="risk_reward_ratio" type="number" min="1.2" max="20" step="0.1" value="2" /></label>
-            <div class="holding-control full-row">
-              <span>Max Holding</span>
-              <div class="holding-buttons" id="holdingButtons">
-                <button type="button" data-holding="12">12h</button>
-                <button type="button" data-holding="24" class="active">24h</button>
-                <button type="button" data-holding="48">48h</button>
-                <button type="button" data-holding="infinite">No Limit</button>
-                <button type="button" data-holding="custom">Custom</button>
-              </div>
-              <input id="customHoldingHours" name="custom_holding_hours" type="number" min="1" max="8760" step="1" value="72" hidden />
-            </div>
-            <button type="submit" data-single-backtest>Run Backtest</button>
-          </form>
-          <section class="optimizer-panel" id="exitOptimizerPanel" hidden>
-            <div class="panel-head">
-              <h2>Exit Optimizer</h2>
-              <span>Scan ATR and R:R combinations with the same entry conditions</span>
-            </div>
-            <div class="optimizer-grid">
-              <label>ATR From<input name="optimizer_atr_from" type="number" min="0.1" max="10" step="0.1" value="0.5" /></label>
-              <label>ATR To<input name="optimizer_atr_to" type="number" min="0.1" max="10" step="0.1" value="3.0" /></label>
-              <label>ATR Step<input name="optimizer_atr_step" type="number" min="0.1" max="2" step="0.1" value="0.1" /></label>
-              <label>R:R From<input name="optimizer_rr_from" type="number" min="0.1" max="30" step="0.1" value="1.2" /></label>
-              <label>R:R To<input name="optimizer_rr_to" type="number" min="0.1" max="30" step="0.1" value="10.0" /></label>
-              <label>R:R Step<input name="optimizer_rr_step" type="number" min="0.1" max="2" step="0.1" value="0.1" /></label>
-              <label>Minimum Trades<input name="optimizer_min_trades" type="number" min="0" step="1" value="50" /></label>
-              <label>Max MDD Filter<input name="optimizer_max_mdd" type="number" max="0" step="0.1" value="-30" /></label>
-              <label>Profit Factor Filter<input name="optimizer_min_pf" type="number" min="0" step="0.1" value="1.2" /></label>
-              <label>Sort By
-                <select name="optimizer_sort_by">
-                  <option value="expectancy_r">Expectancy(R)</option>
-                  <option value="profit_factor">Profit Factor</option>
-                  <option value="mdd">MDD</option>
-                  <option value="win_rate">Win Rate</option>
-                  <option value="total_return">Total Return</option>
-                </select>
-              </label>
-            </div>
-            <div class="optimizer-actions">
-              <span id="optimizerCombinationWarning"></span>
-              <button type="button" id="runOptimizationButton">Run Optimization</button>
-            </div>
-          </section>
-          <section class="condition-builder">
-            <div class="builder-head">
-              <div>
-                <h3>Entry Conditions</h3>
-                <span>Build parameterized strategy rules for this backtest.</span>
-              </div>
-              <select id="conditionTypeSelect"></select>
-            </div>
-            <div class="condition-param-grid aligned-param-grid" id="conditionParamFields"></div>
-            <div class="builder-actions">
-              <button type="button" id="addConditionButton">Add Condition</button>
-            </div>
-            <div class="selected-condition-list" id="selectedConditionList"></div>
-          </section>
-        </section>
-        <section class="panel backtest-result-panel" id="backtestResultPanel" hidden>
-          <div class="panel-head">
-            <h2>Backtest Result</h2>
-            <span id="backtestResultMeta">-</span>
-          </div>
-          <div class="result-stack">
-          <div class="strategy-score-slot" id="strategyScoreSlot">
-            <span>Strategy Score</span>
-            <strong>Pending</strong>
-            <small>Based on Expectancy, PF, Trades, and MDD</small>
-          </div>
-          <div class="kpi-grid" id="backtestMetrics"></div>
-          <section class="chart-panel equity-focus">
-            <div class="panel-head"><h2>Equity Curve</h2><span>Cumulative return % by closed trade</span></div>
-            <canvas id="backtestEquityChart"></canvas>
-          </section>
-          <div class="panel-grid">
-            <section class="chart-panel">
-              <div class="panel-head"><h2>Drawdown</h2><span>Peak-to-current decline</span></div>
-              <canvas id="backtestDrawdownChart"></canvas>
-            </section>
-          </div>
-          <div class="panel-grid">
-            <section class="chart-panel">
-              <div class="panel-head"><h2>Return Distribution</h2><span>Trade outcome buckets</span></div>
-              <canvas id="backtestDistributionChart"></canvas>
-            </section>
-            <section class="chart-panel">
-              <div class="panel-head"><h2>Monthly Returns</h2><span>Exit month basis</span></div>
-              <canvas id="backtestMonthlyChart"></canvas>
-            </section>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Entry Time</th>
-                  <th>Exit Time</th>
-                  <th>Entry Price</th>
-                  <th>Exit Price</th>
-                  <th>Result</th>
-                  <th>Return(R)</th>
-                  <th>Return(%)</th>
-                  <th>MFE</th>
-                  <th>MAE</th>
-                </tr>
-              </thead>
-              <tbody id="backtestTradesTable"></tbody>
-            </table>
-          </div>
-          </div>
-        </section>
-        <section class="panel" id="optimizerResultPanel" hidden>
-          <div class="panel-head">
-            <h2>Optimization Result</h2>
-            <span id="optimizerResultMeta">-</span>
-          </div>
-          <div class="metric-grid" id="optimizerSummaryCards"></div>
-          <section class="chart-panel">
-            <div class="panel-head"><h2>Top 10 Strategies</h2><span>Expectancy(R)</span></div>
-            <canvas id="optimizerTopChart"></canvas>
-          </section>
-          <div class="table-wrap"><table id="optimizerResultsTable"></table></div>
-        </section>
-        <section class="panel top-results-panel" id="topOptimizationPreview">
-          <div class="panel-head">
-            <h2>Top Optimization Results</h2>
-            <span>Exit Optimizer results will appear here after a run</span>
-          </div>
-          <div class="top-result-list" id="topOptimizationList">
-            <article class="top-result-empty">Run Exit Optimizer to compare ATR / R:R combinations.</article>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Strategy Performance</h2>
-            <span>Saved preset comparison</span>
-          </div>
-          <div class="table-wrap"><table id="strategyPerformanceTable"></table></div>
-        </section>
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Backtest Runs</h2>
-            <span>Click a row to inspect the saved result</span>
-          </div>
-          <div class="table-wrap"><table id="backtestRunsTable"></table></div>
-        </section>
+          <span id="evaluationResult" class="status"></span>
+        </div>
+        <div class="table-wrap">
+          <table id="rulesTable"></table>
         </div>
       </section>
 
-      <section id="research" class="view">
-        <div class="panel-grid">
-          <section class="panel">
-            <div class="panel-head"><h2>성공 신호 TOP 20</h2><span>24h return</span></div>
-            <div class="table-wrap"><table id="winnersTable"></table></div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h2>실패 신호 TOP 20</h2><span>24h return</span></div>
-            <div class="table-wrap"><table id="losersTable"></table></div>
-          </section>
+      <section class="panel">
+        <div class="section-title">
+          <p class="eyebrow">History</p>
+          <h2>알림 이력</h2>
         </div>
-      </section>
-
-      <section id="settings" class="view">
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Settings</h2>
-            <span>확장 준비 상태</span>
-          </div>
-          <div id="settingsPanel" class="settings-grid"></div>
-        </section>
+        <div class="table-wrap">
+          <table id="signalsTable"></table>
+        </div>
       </section>
     </main>
-
-    <div class="modal" id="detailModal" hidden>
-      <div class="modal-card">
-        <button class="modal-close" id="closeModal">×</button>
-        <div id="detailContent"></div>
-      </div>
-    </div>
 
     <script src="/static/dashboard/app.js"></script>
   </body>

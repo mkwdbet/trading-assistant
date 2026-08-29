@@ -10,7 +10,6 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir "."
 
 COPY app ./app
-COPY strategies ./strategies
 COPY docs ./docs
 COPY README.md ./
 
