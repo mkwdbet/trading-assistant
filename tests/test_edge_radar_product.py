@@ -30,10 +30,10 @@ def test_dashboard_is_edge_radar_only() -> None:
     js = (ROOT / "app/static/dashboard/app.js").read_text(encoding="utf-8")
 
     assert "Long-Term Edge Radar" in html
-    assert "Rule Builder" in html
+    assert "아이디어 추가 방식" in html
     assert 'class="metric-card"' in html
     assert 'class="workspace"' in html
-    assert 'class="rule-form"' in html
+    assert 'class="workflow-grid"' in html
     assert 'id="sendTestAlertButton"' in html
     assert "discordStatus" in js
     assert "/api/v1/notifications/discord/test" in js

@@ -8,7 +8,6 @@ const api = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("edgeRuleForm").addEventListener("submit", saveRule);
   document.getElementById("evaluateNowButton").addEventListener("click", evaluateNow);
   document.getElementById("sendTestAlertButton").addEventListener("click", sendTestAlert);
   refreshAll();
@@ -96,39 +95,6 @@ function renderSignals(rows) {
   );
 }
 
-async function saveRule(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const formData = new FormData(form);
-  const payload = {
-    name: text(formData, "name"),
-    symbol: text(formData, "symbol"),
-    timeframe: text(formData, "timeframe"),
-    direction: text(formData, "direction"),
-    ma_type: "sma",
-    ma_period: Number(formData.get("ma_period")),
-    tolerance_pct: Number(formData.get("tolerance_pct")) / 100,
-    cooldown_hours: Number(formData.get("cooldown_hours")),
-    thesis: text(formData, "thesis"),
-    judgment: text(formData, "judgment"),
-    enabled: true,
-  };
-
-  const response = await fetch(api.edgeRules, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const saveStatus = document.getElementById("saveStatus");
-  if (!response.ok) {
-    const error = await response.json();
-    saveStatus.textContent = error.detail || "저장 실패";
-    return;
-  }
-  saveStatus.textContent = "저장 완료";
-  await refreshAll();
-}
-
 async function evaluateNow() {
   const target = document.getElementById("evaluationResult");
   target.textContent = "평가 중...";
@@ -161,10 +127,6 @@ function renderTable(id, headers, rows, mapper, emptyText) {
     .map((row) => `<tr>${mapper(row).map((value) => `<td>${value ?? "-"}</td>`).join("")}</tr>`)
     .join("");
   table.innerHTML = `${head}<tbody>${body}</tbody>`;
-}
-
-function text(formData, key) {
-  return String(formData.get(key) || "").trim();
 }
 
 function formatPercent(value) {

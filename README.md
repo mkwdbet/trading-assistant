@@ -18,7 +18,7 @@ Saved Edge Rules -> Scheduled Market Data Check -> Signal Storage -> Discord Ale
 TradingView Webhook -> FastAPI -> Matching Edge Rule -> Discord Alert
 ```
 
-현재 웹에서 지원하는 규칙은 `가격이 특정 SMA에 지정 오차 범위 내 접근`하는 형태입니다.
+현재 기본 규칙은 `가격이 특정 SMA에 지정 오차 범위 내 접근`하는 형태입니다. 웹에서 직접 복잡한 조건을 조립하지 않고, 아이디어가 생기면 Codex와 대화해서 조건을 확정한 뒤 코드 또는 DB에 반영합니다.
 
 예시:
 
@@ -94,11 +94,12 @@ http://127.0.0.1:8000/dashboard
 
 현재 대시보드에서 할 수 있는 일:
 
-- 장기 Edge Rule 추가
+- 현재 감시 중인 Edge Rule 확인
 - 저장된 Edge Rule 삭제
 - 저장된 조건 즉시 평가
 - 최근 알림 이력 확인
 - Discord/evaluator 설정 상태 확인
+- Discord 테스트 알림 전송
 
 ## Current Saved Rule
 
@@ -212,13 +213,15 @@ bash scripts/deploy_prod.sh
 
 ## Future Strategy Workflow
 
-앞으로 새 아이디어가 생기면 이런 식으로 진행합니다.
+앞으로 새 아이디어가 생기면 웹 폼에 직접 입력하지 않고, 이 채팅에서 Codex와 정리합니다.
 
 ```text
 사용자: QQQ가 주봉 SMA100에 닿고, 시장이 과열이 아닐 때만 알림 받고 싶어.
-Codex: 조건을 정리하고 코드 전략 또는 Edge Rule로 구현.
-테스트: 로컬에서 수동 평가.
-배포: GitHub push 후 AWS 반영.
+Codex: 불확실한 부분만 질문.
+사용자: 오차는 1%, 쿨다운은 7일로 해줘.
+Codex: 티커/데이터 소스/타임프레임/조건/알림 문구를 확정.
+Codex: 코드 또는 DB에 반영하고 테스트.
+Codex: GitHub push 후 AWS 반영.
 ```
 
-웹에서 모든 조건을 자유롭게 조립하는 기능은 당장 만들지 않습니다. 혼자 쓰는 서비스라면 Codex와 대화하면서 명확한 전략 파일을 하나씩 추가하는 방식이 더 단순하고 오래 유지하기 좋습니다.
+웹에서 모든 조건을 자유롭게 조립하는 기능은 만들지 않습니다. 혼자 쓰는 서비스라면 Codex와 대화하면서 명확한 조건을 하나씩 추가하는 방식이 더 단순하고 오래 유지하기 좋습니다.

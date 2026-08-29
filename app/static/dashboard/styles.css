@@ -122,7 +122,6 @@ main {
 }
 
 .metric-card span,
-.field span,
 .status-list dt {
   color: var(--muted);
   display: block;
@@ -176,92 +175,43 @@ main {
   text-align: left;
 }
 
-.rule-form {
+.workflow-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  min-width: 0;
-}
-
-.field-wide {
-  grid-column: span 4;
-}
-
-input,
-select,
-textarea {
-  appearance: none;
+.workflow-grid article {
   background: #0b0f0c;
-  border: 1px solid #354137;
-  border-radius: 6px;
-  color: var(--text);
-  min-height: 44px;
-  outline: none;
-  padding: 10px 12px;
-  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 150px;
+  padding: 18px;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(139, 209, 124, 0.16);
-}
-
-select {
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 18px) 18px,
-    calc(100% - 12px) 18px;
-  background-size:
-    6px 6px,
-    6px 6px;
-  background-repeat: no-repeat;
-  padding-right: 34px;
-}
-
-textarea {
-  line-height: 1.5;
-  min-height: 92px;
-  resize: vertical;
-}
-
-.input-suffix {
-  align-items: stretch;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.input-suffix input {
-  border-bottom-right-radius: 0;
-  border-top-right-radius: 0;
-}
-
-.input-suffix span {
+.workflow-grid article span {
   align-items: center;
-  background: var(--surface-soft);
-  border: 1px solid #354137;
-  border-left: 0;
-  border-radius: 0 6px 6px 0;
-  color: var(--muted);
-  display: flex;
+  background: var(--accent);
+  border-radius: 999px;
+  color: #09100a;
+  display: inline-flex;
   font-size: 13px;
-  margin: 0;
-  min-width: 56px;
-  padding: 0 12px;
-  text-transform: none;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  margin-bottom: 14px;
+  width: 28px;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
+.workflow-grid h3 {
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+
+.workflow-grid p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
 }
 
 button {
@@ -376,12 +326,8 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 
-  .rule-form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .field-wide {
-    grid-column: span 2;
+  .workflow-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -401,18 +347,12 @@ tbody tr:hover {
   }
 
   .hero-actions,
-  .hero-actions button,
-  .form-actions button {
+  .hero-actions button {
     width: 100%;
   }
 
-  .metrics,
-  .rule-form {
+  .metrics {
     grid-template-columns: 1fr;
-  }
-
-  .field-wide {
-    grid-column: span 1;
   }
 
   .status-text {
