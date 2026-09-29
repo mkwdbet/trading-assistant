@@ -12,6 +12,7 @@ from app.services.dashboard_analytics import (
     build_signal_detail,
     build_signal_rows,
 )
+from app.services.discord import DiscordNotifier
 from app.services.edge_alert_rules import (
     create_edge_alert_rule,
     delete_edge_alert_rule,
@@ -163,5 +164,11 @@ async def post_discord_test_notification() -> dict[str, str]:
             },
         },
     )
-    await NotificationService().send_signal(signal)
+    try:
+        await DiscordNotifier().send_signal(signal)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Discord test notification failed: {exc}",
+        ) from exc
     return {"status": "sent"}
