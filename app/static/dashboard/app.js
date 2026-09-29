@@ -4,12 +4,14 @@ const api = {
   edgeRules: "/api/v1/edge-rules",
   evaluate: "/api/v1/edge-rules/evaluate",
   testAlert: "/api/v1/notifications/discord/test",
+  discordSettings: "/api/v1/settings/discord",
   signals: "/api/v1/signals?limit=100",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("evaluateNowButton").addEventListener("click", evaluateNow);
   document.getElementById("sendTestAlertButton").addEventListener("click", sendTestAlert);
+  document.getElementById("discordSettingsForm").addEventListener("submit", saveDiscordSettings);
   refreshAll();
 });
 
@@ -42,7 +44,7 @@ function renderSummary(dashboard, settings) {
     : "off";
   document.getElementById("discordStatus").textContent = settings.discord.configured
     ? settings.discord.enabled
-      ? "enabled"
+      ? `enabled · ${settings.discord.masked_webhook}`
       : "configured"
     : "not configured";
   document.getElementById("productMode").textContent = settings.product.mode.replaceAll("_", " ");
@@ -144,6 +146,26 @@ async function evaluateNow() {
   const response = await fetch(api.evaluate, { method: "POST" });
   const result = await response.json();
   target.textContent = `평가 ${result.rules_evaluated}, 매칭 ${result.rules_matched}, 알림 ${result.signals_created}`;
+  await refreshAll();
+}
+
+async function saveDiscordSettings(event) {
+  event.preventDefault();
+  const target = document.getElementById("discordSettingsStatus");
+  const input = document.getElementById("discordWebhookInput");
+  target.textContent = "저장 중...";
+  const response = await fetch(api.discordSettings, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ webhook_url: input.value }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    target.textContent = result.detail || "저장 실패";
+    return;
+  }
+  input.value = "";
+  target.textContent = `저장 완료 · ${result.masked_webhook}`;
   await refreshAll();
 }
 

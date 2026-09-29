@@ -40,6 +40,23 @@ textarea {
   font: inherit;
 }
 
+input,
+select,
+textarea {
+  background: #0b0f0c;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  min-height: 42px;
+  padding: 0 12px;
+  width: 100%;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6f7a71;
+}
+
 .app-shell {
   margin: 0 auto;
   max-width: 1240px;
@@ -311,6 +328,25 @@ button:hover {
 .full-button {
   margin-top: 16px;
   width: 100%;
+}
+
+.settings-form {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.settings-form label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.settings-form .full-button {
+  margin-top: 0;
 }
 
 .danger {

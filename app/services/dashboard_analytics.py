@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.models import EdgeAlertRule, Signal
+from app.services.runtime_settings import get_discord_webhook_url, mask_secret
 
 
 def build_dashboard_summary(db: Session, *, now: datetime | None = None) -> dict[str, Any]:
@@ -65,7 +66,8 @@ def build_signal_detail(db: Session, signal_id: int) -> dict[str, Any] | None:
     return _signal_row(signal)
 
 
-def build_settings_summary() -> dict[str, Any]:
+def build_settings_summary(db: Session | None = None) -> dict[str, Any]:
+    discord_webhook_url = get_discord_webhook_url(db)
     return {
         "product": {
             "name": "Long-Term Edge Radar",
@@ -73,8 +75,8 @@ def build_settings_summary() -> dict[str, Any]:
         },
         "discord": {
             "enabled": settings.enable_discord_notifications,
-            "configured": bool(settings.discord_webhook_url),
-            "masked_webhook": _mask_secret(settings.discord_webhook_url),
+            "configured": bool(discord_webhook_url),
+            "masked_webhook": mask_secret(discord_webhook_url),
         },
         "edge_rule_evaluator": {
             "enabled": settings.enable_edge_rule_evaluator,
@@ -169,14 +171,6 @@ def _rule_id_from_signal(signal: Signal) -> int | None:
 def _count_since(signals: list[Signal], cutoff: datetime) -> int:
     cutoff = _utc(cutoff)
     return sum(1 for signal in signals if _utc(signal.occurred_at) >= cutoff)
-
-
-def _mask_secret(value: str) -> str | None:
-    if not value:
-        return None
-    return f"{value[:30]}...{value[-6:]}"
-
-
 def _utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)

@@ -81,6 +81,18 @@
                 Send Test Alert
               </button>
               <p id="testAlertStatus" class="status-text left"></p>
+              <form class="settings-form" id="discordSettingsForm">
+                <label for="discordWebhookInput">Discord Webhook</label>
+                <input
+                  id="discordWebhookInput"
+                  name="webhook_url"
+                  type="password"
+                  autocomplete="off"
+                  placeholder="https://discord.com/api/webhooks/..."
+                />
+                <button class="secondary full-button" type="submit">Save Webhook</button>
+                <p id="discordSettingsStatus" class="status-text left"></p>
+              </form>
             </section>
           </aside>
         </section>

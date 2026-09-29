@@ -21,6 +21,7 @@ from app.services.edge_alert_rules import (
 )
 from app.services.edge_rule_evaluator import evaluate_saved_edge_rules
 from app.services.notifier import NotificationService
+from app.services.runtime_settings import get_discord_webhook_url, mask_secret, set_discord_webhook_url
 from app.services.signal_repository import create_signal, has_recent_duplicate_signal
 
 router = APIRouter()
@@ -129,8 +130,17 @@ def get_signal_detail(signal_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/settings", tags=["dashboard"])
-def get_settings_summary() -> dict:
-    return build_settings_summary()
+def get_settings_summary(db: Session = Depends(get_db)) -> dict:
+    return build_settings_summary(db)
+
+
+@router.put("/settings/discord", tags=["dashboard"])
+def put_discord_settings(payload: dict, db: Session = Depends(get_db)) -> dict[str, str]:
+    try:
+        webhook_url = set_discord_webhook_url(db, str(payload.get("webhook_url") or ""))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return {"masked_webhook": mask_secret(webhook_url), "status": "saved"}
 
 
 @router.post("/notifications/discord/test", tags=["notifications"])
@@ -140,7 +150,7 @@ async def post_discord_test_notification() -> dict[str, str]:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Discord notifications are disabled.",
         )
-    if not settings.discord_webhook_url:
+    if not get_discord_webhook_url():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="DISCORD_WEBHOOK_URL is not configured.",

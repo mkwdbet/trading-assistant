@@ -8,6 +8,7 @@ from app.db.models import Base
 from app.main import create_app
 from app.services.dashboard_analytics import build_dashboard_summary, build_settings_summary
 from app.services.edge_alert_rules import create_edge_alert_rule
+from app.services.runtime_settings import set_discord_webhook_url
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,8 +37,10 @@ def test_dashboard_is_edge_radar_only() -> None:
     assert 'id="signalBoard"' in html
     assert "renderSignalBoard" in js
     assert 'id="sendTestAlertButton"' in html
+    assert 'id="discordSettingsForm"' in html
     assert "discordStatus" in js
     assert "/api/v1/notifications/discord/test" in js
+    assert "/api/v1/settings/discord" in js
     assert "Backtest" not in html
     assert "Strategy Research" not in html
     assert "backtests" not in js
@@ -80,3 +83,19 @@ def test_settings_summary_reports_edge_evaluator_not_outcome_tracker() -> None:
     assert settings["product"]["mode"] == "rare_edge_alerts_only"
     assert "edge_rule_evaluator" in settings
     assert "outcome_tracking" not in settings
+
+
+def test_settings_summary_uses_saved_discord_webhook() -> None:
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    with session_factory() as db:
+        set_discord_webhook_url(
+            db,
+            "https://discord.com/api/webhooks/1234567890/test-token",
+        )
+        summary = build_settings_summary(db)
+
+    assert summary["discord"]["configured"] is True
+    assert summary["discord"]["masked_webhook"].endswith("...-token")
