@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.db.models import Signal
 from app.db.session import get_db
 from app.schemas import SignalCreate, TradingViewWebhookPayload
 from app.services.dashboard_analytics import (
@@ -127,6 +128,19 @@ def get_signal_detail(signal_id: int, db: Session = Depends(get_db)) -> dict:
     if detail is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Signal not found")
     return detail
+
+
+@router.delete("/signals/legacy-sma/{secret}", tags=["signals"])
+def delete_legacy_sma_signals(secret: str, db: Session = Depends(get_db)) -> dict[str, int | str]:
+    if secret != settings.tradingview_webhook_secret:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid maintenance secret")
+
+    deleted = db.query(Signal).filter(Signal.strategy_name == "sma_strategy").delete(
+        synchronize_session=False,
+    )
+    db.commit()
+    remaining = db.query(Signal).count()
+    return {"status": "deleted", "deleted": deleted, "remaining": remaining}
 
 
 @router.get("/settings", tags=["dashboard"])

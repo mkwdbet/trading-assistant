@@ -1,10 +1,15 @@
+from datetime import datetime
 from pathlib import Path
 
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.core.config import Settings
-from app.db.models import Base
+from app.core.config import settings as app_settings
+from app.db.models import Base, Signal
+from app.db.session import get_db
 from app.main import create_app
 from app.services.dashboard_analytics import build_dashboard_summary, build_settings_summary
 from app.services.edge_alert_rules import create_edge_alert_rule
@@ -48,7 +53,11 @@ def test_dashboard_is_edge_radar_only() -> None:
 
 
 def test_dashboard_summary_counts_edge_rules() -> None:
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(bind=engine)
     session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -99,3 +108,55 @@ def test_settings_summary_uses_saved_discord_webhook() -> None:
 
     assert summary["discord"]["configured"] is True
     assert summary["discord"]["masked_webhook"].endswith("...-token")
+
+
+def test_delete_legacy_sma_signals_keeps_edge_radar_signals() -> None:
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    with session_factory() as db:
+        db.add_all(
+            [
+                Signal(
+                    symbol="BINANCE:BTCUSDT.P",
+                    timeframe="240",
+                    strategy_name="sma_strategy",
+                    signal_type="매수 관심",
+                    message="legacy",
+                    payload_json="{}",
+                    occurred_at=datetime(2026, 6, 13, 8, 0, 0),
+                ),
+                Signal(
+                    symbol="BTCUSDT.P",
+                    timeframe="1w",
+                    strategy_name="rare_edge_rules",
+                    signal_type="희귀 매수 우위",
+                    message="edge",
+                    payload_json="{}",
+                    occurred_at=datetime(2026, 9, 29, 15, 7, 6),
+                ),
+            ]
+        )
+        db.commit()
+
+    def override_get_db():
+        with session_factory() as db:
+            yield db
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    client = TestClient(app)
+
+    response = client.delete(f"/api/v1/signals/legacy-sma/{app_settings.tradingview_webhook_secret}")
+
+    assert response.status_code == 200
+    assert response.json()["deleted"] == 1
+    assert response.json()["remaining"] == 1
+    with session_factory() as db:
+        remaining = db.query(Signal).one()
+    assert remaining.strategy_name == "rare_edge_rules"
