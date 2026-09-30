@@ -211,6 +211,28 @@ bash scripts/deploy_prod.sh
 
 운영 서버에서 `ENABLE_EDGE_RULE_EVALUATOR=true`이면 PC를 꺼도 서버가 계속 조건을 평가하고 Discord 알림을 보냅니다.
 
+## Automatic GitHub Actions Deployment
+
+`.github/workflows/deploy.yml` runs tests on every push to `main`. If tests pass, it connects to the AWS server over SSH and runs:
+
+```bash
+cd /home/ubuntu/trading-assistant
+git fetch origin main
+git reset --hard origin/main
+bash scripts/deploy_prod.sh
+```
+
+Add these GitHub repository secrets once:
+
+```text
+AWS_HOST=3.34.230.202
+AWS_USER=ubuntu
+AWS_SSH_PRIVATE_KEY=<contents of the EC2 .pem private key>
+AWS_DEPLOY_PATH=/home/ubuntu/trading-assistant
+```
+
+`AWS_USER` and `AWS_DEPLOY_PATH` have defaults, but setting them explicitly keeps the deployment clear. After these secrets are saved, future pushes to `main` deploy automatically without opening the AWS terminal.
+
 ## Future Strategy Workflow
 
 앞으로 새 아이디어가 생기면 웹 폼에 직접 입력하지 않고, 이 채팅에서 Codex와 정리합니다.
