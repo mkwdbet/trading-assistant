@@ -181,15 +181,43 @@ main {
 
 .status-text {
   color: var(--accent-strong);
+  background: rgba(240, 193, 90, 0.08);
+  border: 1px solid rgba(240, 193, 90, 0.18);
+  border-radius: 6px;
   line-height: 1.5;
   margin: 0;
   min-height: 21px;
+  padding: 6px 10px;
   text-align: right;
 }
 
 .status-text.left {
   margin-top: 10px;
   text-align: left;
+}
+
+.status-text:empty {
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+}
+
+.status-text.active {
+  color: #d7e8ff;
+  background: rgba(112, 161, 255, 0.1);
+  border-color: rgba(112, 161, 255, 0.28);
+}
+
+.status-text.success {
+  color: var(--accent);
+  background: rgba(139, 209, 124, 0.12);
+  border-color: rgba(139, 209, 124, 0.3);
+}
+
+.status-text.error {
+  color: var(--danger);
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.3);
 }
 
 .signal-board {
@@ -313,6 +341,11 @@ button {
 
 button:hover {
   border-color: var(--accent);
+}
+
+button:disabled {
+  cursor: progress;
+  opacity: 0.65;
 }
 
 .primary {

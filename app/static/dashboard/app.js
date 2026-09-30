@@ -142,11 +142,35 @@ function renderSignals(rows) {
 
 async function evaluateNow() {
   const target = document.getElementById("evaluationResult");
-  target.textContent = "평가 중...";
-  const response = await fetch(api.evaluate, { method: "POST" });
-  const result = await response.json();
-  target.textContent = `평가 ${result.rules_evaluated}, 매칭 ${result.rules_matched}, 알림 ${result.signals_created}`;
-  await refreshAll();
+  const button = document.getElementById("evaluateNowButton");
+  const originalText = button.textContent;
+  target.className = "status-text active";
+  target.textContent = "Running evaluation...";
+  button.disabled = true;
+  button.textContent = "Evaluating...";
+
+  try {
+    const response = await fetch(api.evaluate, { method: "POST" });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.detail || "Evaluation failed");
+    }
+
+    target.className = "status-text success";
+    target.textContent = [
+      `${result.rules_evaluated} rules checked`,
+      `${result.rules_matched} matched`,
+      `${result.signals_created} new alerts`,
+      `${result.duplicates_skipped} duplicate skipped`,
+    ].join(" · ");
+    await refreshAll();
+  } catch (error) {
+    target.className = "status-text error";
+    target.textContent = error.message || "Evaluation failed";
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
 }
 
 async function saveDiscordSettings(event) {
