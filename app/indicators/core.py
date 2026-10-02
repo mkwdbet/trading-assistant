@@ -50,6 +50,42 @@ def rsi(values: Sequence[float], period: int = 14) -> list[float | None]:
     return result
 
 
+def wilder_rsi(values: Sequence[float], period: int = 14) -> list[float | None]:
+    if not values:
+        return []
+    result: list[float | None] = [None] * len(values)
+    if len(values) <= period:
+        return result
+
+    gains: list[float] = []
+    losses: list[float] = []
+    for index in range(1, period + 1):
+        change = values[index] - values[index - 1]
+        gains.append(max(change, 0.0))
+        losses.append(max(-change, 0.0))
+
+    avg_gain = sum(gains) / period
+    avg_loss = sum(losses) / period
+    result[period] = _rsi_from_averages(avg_gain, avg_loss)
+
+    for index in range(period + 1, len(values)):
+        change = values[index] - values[index - 1]
+        gain = max(change, 0.0)
+        loss = max(-change, 0.0)
+        avg_gain = ((avg_gain * (period - 1)) + gain) / period
+        avg_loss = ((avg_loss * (period - 1)) + loss) / period
+        result[index] = _rsi_from_averages(avg_gain, avg_loss)
+
+    return result
+
+
+def _rsi_from_averages(avg_gain: float, avg_loss: float) -> float:
+    if avg_loss == 0:
+        return 100.0
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+
 def atr(highs: Sequence[float], lows: Sequence[float], closes: Sequence[float], period: int = 14) -> list[float | None]:
     true_ranges: list[float] = []
     for index, high in enumerate(highs):

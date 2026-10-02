@@ -59,6 +59,10 @@ def format_discord_signal_embed(signal: Signal) -> dict[str, Any]:
 def _template_for_signal(signal_type: str) -> dict[str, Any]:
     if signal_type in SIGNAL_TEMPLATES:
         return SIGNAL_TEMPLATES[signal_type]
+    if "Overbought" in signal_type:
+        return SIGNAL_TEMPLATES["희귀 매도 우위"]
+    if "Oversold" in signal_type or "Drawdown" in signal_type:
+        return SIGNAL_TEMPLATES["희귀 매수 우위"]
     if "매수" in signal_type:
         return SIGNAL_TEMPLATES["희귀 매수 우위"]
     if "매도" in signal_type:

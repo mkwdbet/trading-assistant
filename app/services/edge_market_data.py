@@ -21,6 +21,8 @@ YAHOO_SYMBOL_ALIASES = {
     "DXY": "DX-Y.NYB",
     "BTCUSDT.P": "BTC-USD",
     "BINANCE:BTCUSDT.P": "BTC-USD",
+    "BTC/USD": "BTC-USD",
+    "BTCUSD": "BTC-USD",
     "ETHUSDT.P": "ETH-USD",
     "BINANCE:ETHUSDT.P": "ETH-USD",
 }
@@ -35,6 +37,13 @@ class EdgeMarketSnapshot:
     close: float
     moving_average: float
     ma_key: str
+
+
+@dataclass(frozen=True)
+class EdgeMarketRow:
+    time: datetime
+    close: float
+    high: float | None = None
 
 
 class YahooEdgeMarketData:
@@ -76,6 +85,12 @@ class YahooEdgeMarketData:
             moving_average=latest_ma,
             ma_key=f"{ma_type.lower()}{ma_period}",
         )
+
+    async def get_weekly_series(self, *, symbol: str) -> list[EdgeMarketRow]:
+        provider_symbol = normalize_yahoo_symbol(symbol)
+        result = await self._get_chart(provider_symbol, interval="1wk", range_value="max")
+        rows = _extract_rows(result)
+        return [EdgeMarketRow(time=row["time"], close=row["close"], high=row.get("high")) for row in rows]
 
     async def _get_chart(self, symbol: str, *, interval: str, range_value: str) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=20) as client:
@@ -135,14 +150,17 @@ def _extract_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
     timestamps = result.get("timestamp") or []
     quote = (result.get("indicators", {}).get("quote") or [{}])[0]
     closes = quote.get("close") or []
+    highs = quote.get("high") or []
     rows = []
-    for timestamp, close in zip(timestamps, closes, strict=False):
+    for index, (timestamp, close) in enumerate(zip(timestamps, closes, strict=False)):
         if close is None:
             continue
+        high = highs[index] if index < len(highs) else None
         rows.append(
             {
                 "time": datetime.fromtimestamp(int(timestamp), tz=timezone.utc),
                 "close": float(close),
+                "high": float(high) if high is not None else None,
             }
         )
     return rows

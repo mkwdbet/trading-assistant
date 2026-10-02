@@ -21,6 +21,9 @@ class FakeMarketData:
             ma_key=f"{ma_type}{ma_period}",
         )
 
+    async def get_weekly_series(self, *, symbol: str):
+        return []
+
 
 class FakeNotifier:
     def __init__(self) -> None:
@@ -58,7 +61,7 @@ def test_evaluate_saved_edge_rules_creates_signal_without_tradingview_alert() ->
             )
         )
 
-        assert result["rules_evaluated"] == 1
+        assert result["rules_evaluated"] == 7
         assert result["rules_matched"] == 1
         assert result["signals_created"] == 1
         assert len(notifier.sent) == 1

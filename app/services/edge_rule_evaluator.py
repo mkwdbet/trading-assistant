@@ -8,6 +8,7 @@ from app.db.session import SessionLocal
 from app.schemas import TradingViewWebhookPayload
 from app.services.edge_alert_rules import evaluate_edge_alert_rules, list_edge_alert_rules
 from app.services.edge_market_data import YahooEdgeMarketData
+from app.services.long_term_signals import LONG_TERM_ASSETS, evaluate_long_term_signals
 from app.services.notifier import NotificationService
 from app.services.signal_repository import create_signal, has_recent_duplicate_signal
 
@@ -77,6 +78,21 @@ async def evaluate_saved_edge_rules(
         except Exception:
             failed_count += 1
             errors.append(f"{rule['symbol']} {rule['timeframe']} {rule['ma_type']}{rule['ma_period']}")
+
+    for asset in LONG_TERM_ASSETS:
+        evaluated_count += 3
+        try:
+            rows = await market_data.get_weekly_series(symbol=asset.symbol)
+            signals = evaluate_long_term_signals(db, asset=asset, rows=rows)
+            matched_count += len(signals)
+            for signal in signals:
+                saved_signal = create_signal(db, signal)
+                signal.id = saved_signal.id
+                await notifier.send_signal(signal)
+                created_count += 1
+        except Exception:
+            failed_count += 1
+            errors.append(f"{asset.symbol} built-in long-term signals")
 
     result = {
         "rules_evaluated": evaluated_count,
