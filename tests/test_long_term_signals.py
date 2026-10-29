@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import create_engine
@@ -6,9 +7,10 @@ from sqlalchemy.orm import sessionmaker
 from app.db.models import Base
 from app.services.edge_market_data import EdgeMarketRow
 from app.services.long_term_signals import LongTermAsset, evaluate_long_term_signals
+from app.services.runtime_settings import get_setting, set_setting
 
 
-ASSET = LongTermAsset(symbol="BTC/USD", display_name="BTC/USD")
+ASSET = LongTermAsset(symbol="BTCUSDT.P", display_name="BTCUSDT.P")
 
 
 def test_200w_sma_proximity_signal_enters_once() -> None:
@@ -51,6 +53,21 @@ def test_weekly_wilder_rsi_extreme_signals() -> None:
 
         assert "weekly_rsi_oversold" in signal_types
         assert "weekly_rsi_extreme_oversold" in signal_types
+
+
+def test_btc_symbol_change_preserves_active_alert_state() -> None:
+    with session_factory() as db:
+        old_key = "long_term_technical_signals:BTC_USD:200w_sma_proximity"
+        new_key = "long_term_technical_signals:BTCUSDT.P:200w_sma_proximity"
+        set_setting(db, "long_term_signal_state", json.dumps({old_key: True}))
+        asset = LongTermAsset(symbol="BTCUSDT.P", display_name="BTCUSDT.P")
+
+        signals = evaluate_long_term_signals(db, asset=asset, rows=make_rows([100.0] * 201))
+        state = json.loads(get_setting(db, "long_term_signal_state"))
+
+        assert "weekly_200sma_proximity" not in {signal.analysis_signal_type for signal in signals}
+        assert state[new_key] is True
+        assert old_key not in state
 
 
 def session_factory():

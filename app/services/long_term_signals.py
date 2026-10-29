@@ -37,7 +37,7 @@ class LongTermAsset:
 
 
 LONG_TERM_ASSETS = (
-    LongTermAsset(symbol="BTC/USD", display_name="BTC/USD"),
+    LongTermAsset(symbol="BTCUSDT.P", display_name="BTCUSDT.P"),
     LongTermAsset(symbol="SPX", display_name="S&P500"),
 )
 
@@ -54,6 +54,8 @@ def evaluate_long_term_signals(
 
     closes = [row.close for row in rows]
     state = _load_state(db)
+    if asset.symbol == "BTCUSDT.P":
+        _migrate_btc_state(state)
 
     signals: list[SignalCreate] = []
     signals.extend(_evaluate_200w_sma(asset=asset, rows=rows, closes=closes, state=state))
@@ -297,6 +299,15 @@ def _save_state(db: Session, state: dict[str, bool]) -> None:
 def _state_key(symbol: str, signal_key: str) -> str:
     normalized = symbol.upper().replace("/", "_").replace(":", "_")
     return f"{STRATEGY_NAME}:{normalized}:{signal_key}"
+
+
+def _migrate_btc_state(state: dict[str, bool]) -> None:
+    old_prefix = f"{STRATEGY_NAME}:BTC_USD:"
+    new_prefix = f"{STRATEGY_NAME}:BTCUSDT.P:"
+    for key in list(state):
+        if key.startswith(old_prefix):
+            state.setdefault(new_prefix + key[len(old_prefix) :], state[key])
+            del state[key]
 
 
 def _format_threshold(value: float) -> str:

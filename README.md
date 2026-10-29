@@ -161,14 +161,17 @@ GET    /settings
 
 ## Market Data
 
-저장된 Edge Rule은 서버가 Yahoo Finance chart API에서 가격 데이터를 가져와 평가합니다.
+저장된 Edge Rule은 서버가 가격 데이터를 가져와 평가합니다. `BTCUSDT.P`는 Binance USDⓈ-M 무기한 선물의 `BTCUSDT` K선을 사용합니다. 이전 `BTC/USD` 룰도 같은 선물 데이터로 조회됩니다. BTC 주봉 200 SMA, ATH drawdown, RSI도 동일한 선물 K선을 사용합니다. ATH는 이 선물 계약의 제공 이력(2019년 이후)에서 계산합니다.
+
+SPX와 `NQ1!` 등은 Yahoo Finance chart API를 사용합니다. `NQ=F`는 트레이딩뷰 연속선물 `NQ1!`와 롤오버 방식이 달라 값이 조금 다를 수 있습니다.
 
 내부 심볼 매핑 예시:
 
 - `SPX` -> `^GSPC`
 - `NDX` -> `^NDX`
+- `NQ1!` -> `NQ=F`
 - `DJI` -> `^DJI`
-- `BTCUSDT.P` -> `BTC-USD`
+- `BTCUSDT.P` -> Binance Futures `BTCUSDT`
 
 TradingView에서 직접 webhook을 보내는 방식도 유지합니다. 이 경우 webhook payload 안에 `price`와 `sma60` 같은 값을 포함해야 합니다.
 

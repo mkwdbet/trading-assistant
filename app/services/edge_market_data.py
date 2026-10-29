@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
 
 from app.indicators.core import sma
+from app.services.market_data import BinanceFuturesMarketData
 
 YAHOO_CHART_BASE_URL = "https://query2.finance.yahoo.com/v8/finance/chart"
+logger = logging.getLogger(__name__)
 
 YAHOO_SYMBOL_ALIASES = {
     "SPX": "^GSPC",
@@ -109,6 +112,88 @@ class YahooEdgeMarketData:
             )
             response.raise_for_status()
             return response.json()
+
+
+class BinancePerpetualEdgeMarketData:
+    def __init__(self, futures: BinanceFuturesMarketData | None = None) -> None:
+        self.futures = futures or BinanceFuturesMarketData()
+
+    async def get_snapshot(
+        self, *, symbol: str, timeframe: str, ma_type: str, ma_period: int
+    ) -> EdgeMarketSnapshot | None:
+        if ma_type.lower() != "sma":
+            raise ValueError("Only SMA snapshots are supported")
+
+        intervals = {"1w": timedelta(weeks=1), "1d": timedelta(days=1), "4h": timedelta(hours=4)}
+        if timeframe not in intervals:
+            raise ValueError(f"Unsupported Binance timeframe: {timeframe}")
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - intervals[timeframe] * (ma_period + 10)
+        klines = await self.futures.get_klines(
+            symbol="BTCUSDT.P", interval=timeframe, start_time=start_time, end_time=end_time
+        )
+        if len(klines) < ma_period:
+            logger.warning(
+                "Skipping %s %s SMA%s: only %s Binance futures candles",
+                symbol, timeframe, ma_period, len(klines),
+            )
+            return None
+        closes = [float(row[4]) for row in klines]
+        moving_average = sma(closes, ma_period)[-1]
+        if moving_average is None:
+            return None
+        return EdgeMarketSnapshot(
+            symbol=symbol,
+            provider_symbol="BTCUSDT",
+            timeframe=timeframe,
+            occurred_at=datetime.fromtimestamp(int(klines[-1][0]) / 1000, tz=timezone.utc),
+            close=closes[-1],
+            moving_average=moving_average,
+            ma_key=f"sma{ma_period}",
+        )
+
+    async def get_weekly_series(self, *, symbol: str) -> list[EdgeMarketRow]:
+        klines = await self.futures.get_klines(
+            symbol="BTCUSDT.P",
+            interval="1w",
+            start_time=datetime(2019, 9, 1, tzinfo=timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        )
+        return [
+            EdgeMarketRow(
+                time=datetime.fromtimestamp(int(row[0]) / 1000, tz=timezone.utc),
+                close=float(row[4]),
+                high=float(row[2]),
+            )
+            for row in klines
+        ]
+
+
+class EdgeMarketData:
+    def __init__(
+        self,
+        yahoo: YahooEdgeMarketData | None = None,
+        binance: BinancePerpetualEdgeMarketData | None = None,
+    ) -> None:
+        self.yahoo = yahoo or YahooEdgeMarketData()
+        self.binance = binance or BinancePerpetualEdgeMarketData()
+
+    async def get_snapshot(
+        self, *, symbol: str, timeframe: str, ma_type: str, ma_period: int
+    ) -> EdgeMarketSnapshot | None:
+        provider = self.binance if _is_btc_perpetual(symbol) else self.yahoo
+        return await provider.get_snapshot(
+            symbol=symbol, timeframe=timeframe, ma_type=ma_type, ma_period=ma_period
+        )
+
+    async def get_weekly_series(self, *, symbol: str) -> list[EdgeMarketRow]:
+        provider = self.binance if _is_btc_perpetual(symbol) else self.yahoo
+        return await provider.get_weekly_series(symbol=symbol)
+
+
+def _is_btc_perpetual(symbol: str) -> bool:
+    normalized = symbol.strip().upper().removeprefix("BINANCE:")
+    return normalized in {"BTCUSDT.P", "BTC/USD"}
 
 
 def normalize_yahoo_symbol(symbol: str) -> str:

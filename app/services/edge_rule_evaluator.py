@@ -1,25 +1,28 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.schemas import TradingViewWebhookPayload
 from app.services.edge_alert_rules import evaluate_edge_alert_rules, list_edge_alert_rules
-from app.services.edge_market_data import YahooEdgeMarketData
+from app.services.edge_market_data import EdgeMarketData
 from app.services.long_term_signals import LONG_TERM_ASSETS, evaluate_long_term_signals
 from app.services.notifier import NotificationService
 from app.services.signal_repository import create_signal, has_recent_duplicate_signal
+
+logger = logging.getLogger(__name__)
 
 
 async def evaluate_saved_edge_rules(
     db: Session,
     *,
-    market_data: YahooEdgeMarketData | None = None,
+    market_data: EdgeMarketData | None = None,
     notifier: NotificationService | None = None,
 ) -> dict[str, int]:
-    market_data = market_data or YahooEdgeMarketData()
+    market_data = market_data or EdgeMarketData()
     notifier = notifier or NotificationService()
     rules = [rule for rule in list_edge_alert_rules(db) if rule["enabled"]]
     evaluated_count = 0
@@ -78,6 +81,7 @@ async def evaluate_saved_edge_rules(
         except Exception:
             failed_count += 1
             errors.append(f"{rule['symbol']} {rule['timeframe']} {rule['ma_type']}{rule['ma_period']}")
+            logger.exception("Failed to evaluate edge rule %s", rule["id"])
 
     for asset in LONG_TERM_ASSETS:
         evaluated_count += 3
@@ -93,6 +97,7 @@ async def evaluate_saved_edge_rules(
         except Exception:
             failed_count += 1
             errors.append(f"{asset.symbol} built-in long-term signals")
+            logger.exception("Failed to evaluate built-in signals for %s", asset.symbol)
 
     result = {
         "rules_evaluated": evaluated_count,

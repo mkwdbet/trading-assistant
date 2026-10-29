@@ -48,7 +48,7 @@ app/
     session.py               # SQLite init
   services/
     edge_alert_rules.py      # Rule CRUD and matching logic
-    edge_market_data.py      # Yahoo Finance data provider
+    edge_market_data.py      # Binance BTC perpetual and Yahoo index data providers
     edge_rule_evaluator.py   # Scheduled evaluator loop
     signal_repository.py     # Signal persistence and duplicate guard
     discord.py               # Discord webhook sender
@@ -163,7 +163,7 @@ same symbol + timeframe + rule id + condition type
 
 ## Market Data
 
-Scheduled evaluation uses Yahoo Finance chart data.
+Scheduled evaluation uses Binance USDⓈ-M Futures Klines for BTC and Yahoo Finance chart data for other assets. BTC ATH is the highest price in available perpetual futures history since 2019.
 
 Common aliases:
 
@@ -171,8 +171,9 @@ Common aliases:
 | --- | --- |
 | `SPX` | `^GSPC` |
 | `NDX` | `^NDX` |
+| `NQ1!` | Yahoo `NQ=F` |
 | `DJI` | `^DJI` |
-| `BTCUSDT.P` | `BTC-USD` |
+| `BTCUSDT.P` | Binance Futures `BTCUSDT` |
 | `ETHUSDT.P` | `ETH-USD` |
 
 If a ticker does not work through Yahoo, add an alias or use TradingView webhook payloads for that asset.
