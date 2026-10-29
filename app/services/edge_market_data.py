@@ -17,6 +17,8 @@ YAHOO_SYMBOL_ALIASES = {
     "S&P500": "^GSPC",
     "NDX": "^NDX",
     "NASDAQ:NDX": "^NDX",
+    "NQ1!": "NQ=F",
+    "CME_MINI:NQ1!": "NQ=F",
     "DJI": "^DJI",
     "DXY": "DX-Y.NYB",
     "BTCUSDT.P": "BTC-USD",
